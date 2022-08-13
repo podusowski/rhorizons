@@ -22,7 +22,6 @@ impl TryFrom<&str> for MajorBody {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(Self {
-            // TODO: Emit some meaningful error.
             id: value
                 .get(0..9)
                 .unwrap_or("none")
