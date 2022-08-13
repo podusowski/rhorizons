@@ -11,7 +11,7 @@ pub struct MajorBody {
     id: i32,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum MajorBodyParseError {
     #[error("invalid id")]
     InvalidId(#[source] ParseIntError),
@@ -35,6 +35,10 @@ impl TryFrom<&str> for MajorBody {
 
 #[cfg(test)]
 mod tests {
+    use std::num::ParseIntError;
+
+    use crate::parsing::MajorBodyParseError;
+
     use super::MajorBody;
 
     #[test]
@@ -44,5 +48,15 @@ mod tests {
             MajorBody::try_from("        0  Solar System Barycenter                         SSB")
                 .unwrap()
         );
+
+        assert!(matches!(
+            MajorBody::try_from("****************").unwrap_err(),
+            MajorBodyParseError::InvalidId(ParseIntError { .. })
+        ));
+
+        assert!(matches!(
+            MajorBody::try_from("").unwrap_err(),
+            MajorBodyParseError::InvalidId(ParseIntError { .. })
+        ));
     }
 }
