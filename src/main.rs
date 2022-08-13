@@ -54,7 +54,7 @@ impl TryFrom<&str> for MajorBody {
                 .unwrap_or("none")
                 .trim()
                 .parse()
-                .map_err(|error| MajorBodyParseError::InvalidId(error))?,
+                .map_err(MajorBodyParseError::InvalidId)?,
         })
     }
 }
