@@ -6,7 +6,7 @@ use thiserror::Error;
 /// having pre-computed trajectories.
 ///
 /// https://ssd.jpl.nasa.gov/horizons/manual.html#defs
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MajorBody {
     id: i32,
 }
@@ -30,5 +30,19 @@ impl TryFrom<&str> for MajorBody {
                 .parse()
                 .map_err(MajorBodyParseError::InvalidId)?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MajorBody;
+
+    #[test]
+    fn reading_major_bodies() {
+        assert_eq!(
+            MajorBody { id: 0 },
+            MajorBody::try_from("        0  Solar System Barycenter                         SSB")
+                .unwrap()
+        );
     }
 }
