@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{num::ParseIntError, str::FromStr};
 
 use serde::Deserialize;
+use thiserror::Error;
 
 #[derive(Deserialize, Debug)]
 struct HorizonsResponse {
@@ -36,13 +37,23 @@ struct MajorBody {
     id: i32,
 }
 
+#[derive(Error, Debug)]
+enum MajorBodyParseError {
+    #[error("invalid id")]
+    InvalidId(#[source] ParseIntError),
+}
+
 impl TryFrom<&str> for MajorBody {
-    type Error = ();
+    type Error = MajorBodyParseError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Ok(Self {
             // TODO: Emit some meaningful error.
-            id: value.get(0..9).unwrap_or("none").parse().map_err(|_| ())?,
+            id: value
+                .get(0..9)
+                .unwrap_or("none")
+                .parse()
+                .map_err(|error| MajorBodyParseError::InvalidId(error))?,
         })
     }
 }
