@@ -52,6 +52,7 @@ impl TryFrom<&str> for MajorBody {
             id: value
                 .get(0..9)
                 .unwrap_or("none")
+                .trim()
                 .parse()
                 .map_err(|error| MajorBodyParseError::InvalidId(error))?,
         })
