@@ -24,7 +24,7 @@ async fn query() -> Vec<String> {
         .collect::<Vec<String>>();
 
     for line in &result {
-        eprintln!("{}", line);
+        log::trace!("{}", line);
     }
 
     result
