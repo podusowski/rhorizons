@@ -48,10 +48,6 @@ impl TryFrom<&str> for MajorBody {
 
 struct EphemerisItem;
 
-struct Ephemeris {
-    items: Vec<EphemerisItem>,
-}
-
 enum EphemerisParserState {
     WaitingForSoe,
     Date,
