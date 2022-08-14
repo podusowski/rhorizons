@@ -9,9 +9,10 @@ mod parsing;
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    //for body in major_bodies().await {
-    //    eprintln!("{:?}", body);
-    //}
+
+    for body in major_bodies().await {
+        eprintln!("{:?}", body);
+    }
 
     if let Some(body) = major_bodies()
         .await
