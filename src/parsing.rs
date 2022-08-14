@@ -46,6 +46,77 @@ impl TryFrom<&str> for MajorBody {
     }
 }
 
+struct EphemerisItem;
+
+struct Ephemeris {
+    items: Vec<EphemerisItem>,
+}
+
+enum EphemerisParserState {
+    WaitingForSoe,
+    Date,
+    Position,
+    Velocity,
+    Other,
+    End,
+}
+
+struct EphemerisParser<'a, 'b, Input: Iterator<Item = &'a str>> {
+    state: EphemerisParserState,
+    input: &'b mut Input,
+}
+
+impl<'a, 'b, Input: Iterator<Item = &'a str>> EphemerisParser<'a, 'b, Input> {
+    fn new(input: &'b mut Input) -> Self {
+        Self {
+            state: EphemerisParserState::WaitingForSoe,
+            input,
+        }
+    }
+}
+
+impl<'a, 'b, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, 'b, Input> {
+    type Item = EphemerisItem;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(line) = self.input.next() {
+                match self.state {
+                    EphemerisParserState::WaitingForSoe => {
+                        if line == "$$SOE" {
+                            self.state = EphemerisParserState::Date;
+                        }
+                    }
+                    EphemerisParserState::Date => {
+                        if line == "$$EOE" {
+                            self.state = EphemerisParserState::End;
+                        } else {
+                            self.state = EphemerisParserState::Position;
+                        }
+                    }
+                    EphemerisParserState::Position => {
+                        self.state = EphemerisParserState::Velocity;
+                    }
+                    EphemerisParserState::Velocity => {
+                        self.state = EphemerisParserState::Other;
+                    }
+                    EphemerisParserState::Other => {
+                        self.state = EphemerisParserState::Date;
+                        return Some(EphemerisItem);
+                    }
+                    EphemerisParserState::End => {
+                        // Should we drain input iterator?
+                        return None;
+                    }
+                }
+            } else {
+                // Input iterator is drained. Nothing to do.
+                return None;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::num::ParseIntError;
@@ -104,5 +175,13 @@ mod tests {
             MajorBody::try_from("").unwrap_err(),
             MajorBodyParseError::InvalidId(ParseIntError { .. })
         ));
+    }
+
+    #[test]
+    fn test_parsing_ephemeris() {
+        let data = include_str!("ephem.txt");
+        let ephem: Vec<_> = EphemerisParser::new(&mut data.lines()).collect();
+        assert_eq!(4, ephem.len());
+        //assert_eq!(EphemerisItem{x: 0})
     }
 }
