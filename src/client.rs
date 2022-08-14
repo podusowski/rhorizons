@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::parsing::MajorBody;
 
+/// Generic Horizons response. Their API just gives some JSON with two field,
+/// some statuses and `result` field which is just human-readable string
+/// normally seen in telnet or web API.
 #[derive(Deserialize, Debug)]
 struct HorizonsResponse {
     result: String,
@@ -45,6 +48,10 @@ pub async fn major_bodies() -> Vec<MajorBody> {
 pub async fn ephemeris(id: i32, start_time: DateTime<Utc>, stop_time: DateTime<Utc>) {
     query(&[
         ("COMMAND", id.to_string().as_str()),
+        // Select Sun as a observer. Note that Solar System Barycenter is in a
+        // slightly different place.
+        // https://astronomy.stackexchange.com/questions/44851/
+        ("CENTER", "10"),
         ("EPHEM_TYPE", "VECTORS"),
         // https://ssd.jpl.nasa.gov/horizons/manual.html#time
         (
