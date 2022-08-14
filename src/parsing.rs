@@ -8,8 +8,8 @@ use thiserror::Error;
 /// <https://ssd.jpl.nasa.gov/horizons/manual.html#defs>
 #[derive(Debug, PartialEq, Eq)]
 pub struct MajorBody {
-    id: i32,
-    name: String,
+    pub id: i32,
+    pub name: String,
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
