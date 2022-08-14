@@ -5,7 +5,7 @@ use thiserror::Error;
 /// Planet, natural satellite, spacecraft, Sun, barycenter, or other objects
 /// having pre-computed trajectories.
 ///
-/// https://ssd.jpl.nasa.gov/horizons/manual.html#defs
+/// <https://ssd.jpl.nasa.gov/horizons/manual.html#defs>
 #[derive(Debug, PartialEq, Eq)]
 pub struct MajorBody {
     id: i32,
