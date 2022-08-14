@@ -9,9 +9,8 @@ struct HorizonsResponse {
     result: String,
 }
 
-#[tokio::main]
-async fn main() {
-    let response = reqwest::Client::new()
+async fn major_bodies() -> Vec<MajorBody> {
+    reqwest::Client::new()
         .get("https://ssd.jpl.nasa.gov/api/horizons.api")
         .query(&[("COMMAND", "MB")])
         .send()
@@ -19,12 +18,16 @@ async fn main() {
         .unwrap()
         .json::<HorizonsResponse>()
         .await
-        .unwrap();
+        .unwrap()
+        .result
+        .split("\n")
+        .filter_map(|s| MajorBody::try_from(s).ok())
+        .collect()
+}
 
-    eprintln!("{:?}", response);
-
-    for line in response.result.split("\n") {
-        eprintln!("{}", line);
-        eprintln!("{:?}", MajorBody::try_from(line));
+#[tokio::main]
+async fn main() {
+    for body in major_bodies().await {
+        eprintln!("{:?}", body);
     }
 }
