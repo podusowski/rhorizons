@@ -1,3 +1,4 @@
+use chrono::Utc;
 use client::major_bodies;
 
 use crate::client::ephemeris;
@@ -18,6 +19,6 @@ async fn main() {
         .find(|body| body.name == "Earth")
     {
         eprintln!("{:?}", body);
-        ephemeris(body.id).await;
+        ephemeris(body.id, Utc::now() - chrono::Duration::days(1), Utc::now()).await;
     }
 }

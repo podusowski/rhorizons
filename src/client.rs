@@ -1,3 +1,6 @@
+use std::time::Instant;
+
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::parsing::MajorBody;
@@ -41,10 +44,19 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
-pub async fn ephemeris(id: i32) {
+pub async fn ephemeris(id: i32, start_time: DateTime<Utc>, stop_time: DateTime<Utc>) {
     query(&[
         ("COMMAND", id.to_string().as_str()),
         ("EPHEM_TYPE", "VECTORS"),
+        // https://ssd.jpl.nasa.gov/horizons/manual.html#time
+        (
+            "START_TIME",
+            start_time.format("%Y-%b-%d-%T").to_string().as_str(),
+        ),
+        (
+            "STOP_TIME",
+            stop_time.format("%Y-%b-%d-%T").to_string().as_str(),
+        ),
     ])
     .await;
 }
