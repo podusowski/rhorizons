@@ -1,0 +1,55 @@
+Output type     : GEOMETRIC cartesian states
+Output format   : 3 (position, velocity, LT, range, range-rate)
+EOP file        : eop.220811.p221104
+EOP coverage    : DATA-BASED 1962-JAN-20 TO 2022-AUG-11. PREDICTS-> 2022-NOV-03
+Reference frame : Ecliptic of J2000.0
+*******************************************************************************
+JDTDB
+   X     Y     Z
+   VX    VY    VZ
+   LT    RG    RR
+*******************************************************************************
+$$SOE
+2459805.119293982 = A.D. 2022-Aug-13 14:51:47.0000 TDB 
+ X = 0.000000000000000E+00 Y = 0.000000000000000E+00 Z = 0.000000000000000E+00
+ VX= 0.000000000000000E+00 VY= 0.000000000000000E+00 VZ= 0.000000000000000E+00
+ LT= 0.000000000000000E+00 RG= 0.000000000000000E+00 RR=-NaN                  
+2459805.160960648 = A.D. 2022-Aug-13 15:51:47.0000 TDB 
+ X = 0.000000000000000E+00 Y = 0.000000000000000E+00 Z = 0.000000000000000E+00
+ VX= 0.000000000000000E+00 VY= 0.000000000000000E+00 VZ= 0.000000000000000E+00
+ LT= 0.000000000000000E+00 RG= 0.000000000000000E+00 RR=-NaN                  
+2459805.202627315 = A.D. 2022-Aug-13 16:51:47.0000 TDB 
+ X = 0.000000000000000E+00 Y = 0.000000000000000E+00 Z = 0.000000000000000E+00
+ VX= 0.000000000000000E+00 VY= 0.000000000000000E+00 VZ= 0.000000000000000E+00
+ LT= 0.000000000000000E+00 RG= 0.000000000000000E+00 RR=-NaN                  
+2459805.244293982 = A.D. 2022-Aug-13 17:51:47.0000 TDB 
+ X = 0.000000000000000E+00 Y = 0.000000000000000E+00 Z = 0.000000000000000E+00
+ VX= 0.000000000000000E+00 VY= 0.000000000000000E+00 VZ= 0.000000000000000E+00
+ LT= 0.000000000000000E+00 RG= 0.000000000000000E+00 RR=-NaN                  
+$$EOE
+*******************************************************************************
+ 
+TIME
+
+  Barycentric Dynamical Time ("TDB" or T_eph) output was requested. This
+continuous relativistic coordinate time is equivalent to the relativistic
+proper time of a clock at rest in a reference frame comoving with the
+solar system barycenter but outside the system's gravity well. It is the
+independent variable in the solar system relativistic equations of motion.
+
+  TDB runs at a uniform rate of one SI second per second and is independent
+of irregularities in Earth's rotation.
+
+  Calendar dates prior to 1582-Oct-15 are in the Julian calendar system.
+Later calendar dates are in the Gregorian system.
+
+REFERENCE FRAME AND COORDINATES
+
+  Ecliptic at the standard reference epoch
+
+    Reference epoch: J2000.0
+    X-Y plane: adopted Earth orbital plane at the reference epoch
+               Note: IAU76 obliquity of 84381.448 arcseconds wrt ICRF X-Y plane
+    X-axis   : ICRF
+    Z-axis   : perpendicular to the X-Y plane in the directional (+ or -) sense
+               of Earth's north pole at the reference epoch.
