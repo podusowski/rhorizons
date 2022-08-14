@@ -42,5 +42,9 @@ pub async fn major_bodies() -> Vec<MajorBody> {
 }
 
 pub async fn ephemeris(id: i32) {
-    query(&[("COMMAND", id.to_string())]).await;
+    query(&[
+        ("COMMAND", id.to_string().as_str()),
+        ("EPHEM_TYPE", "VECTORS"),
+    ])
+    .await;
 }
