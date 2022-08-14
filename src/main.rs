@@ -20,6 +20,9 @@ async fn main() {
         .find(|body| body.name == "Earth")
     {
         eprintln!("{:?}", body);
-        ephemeris(body.id, Utc::now() - chrono::Duration::days(1), Utc::now()).await;
+        for vectors in ephemeris(body.id, Utc::now() - chrono::Duration::days(1), Utc::now()).await
+        {
+            eprintln!("{:?}", vectors);
+        }
     }
 }

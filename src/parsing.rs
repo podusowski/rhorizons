@@ -46,7 +46,8 @@ impl TryFrom<&str> for MajorBody {
     }
 }
 
-struct EphemerisItem;
+#[derive(Debug)]
+pub struct EphemerisItem;
 
 enum EphemerisParserState {
     WaitingForSoe,
@@ -57,13 +58,13 @@ enum EphemerisParserState {
     End,
 }
 
-struct EphemerisParser<'a, Input: Iterator<Item = &'a str>> {
+pub struct EphemerisParser<'a, Input: Iterator<Item = &'a str>> {
     state: EphemerisParserState,
     input: Input,
 }
 
 impl<'a, Input: Iterator<Item = &'a str>> EphemerisParser<'a, Input> {
-    fn parse(input: Input) -> Self {
+    pub fn parse(input: Input) -> Self {
         Self {
             state: EphemerisParserState::WaitingForSoe,
             input,

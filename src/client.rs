@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::parsing::MajorBody;
+use crate::parsing::{EphemerisItem, EphemerisParser, MajorBody};
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
 /// some statuses and `result` field which is just human-readable string
@@ -45,8 +45,12 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
-pub async fn ephemeris(id: i32, start_time: DateTime<Utc>, stop_time: DateTime<Utc>) {
-    query(&[
+pub async fn ephemeris(
+    id: i32,
+    start_time: DateTime<Utc>,
+    stop_time: DateTime<Utc>,
+) -> Vec<EphemerisItem> {
+    let result = query(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
         // slightly different place.
@@ -64,4 +68,6 @@ pub async fn ephemeris(id: i32, start_time: DateTime<Utc>, stop_time: DateTime<U
         ),
     ])
     .await;
+
+    EphemerisParser::parse(result.iter().map(String::as_str)).collect()
 }
