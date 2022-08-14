@@ -7,8 +7,9 @@ struct HorizonsResponse {
     result: String,
 }
 
-pub async fn major_bodies() -> Vec<MajorBody> {
-    reqwest::Client::new()
+/// Query the Horizons API, returning a result in form of lines.
+async fn query() -> Vec<String> {
+    let result = reqwest::Client::new()
         .get("https://ssd.jpl.nasa.gov/api/horizons.api")
         .query(&[("COMMAND", "MB")])
         .send()
@@ -19,6 +20,20 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .unwrap()
         .result
         .split('\n')
-        .filter_map(|s| MajorBody::try_from(s).ok())
+        .map(str::to_owned)
+        .collect::<Vec<String>>();
+
+    for line in &result {
+        eprintln!("{}", line);
+    }
+
+    result
+}
+
+pub async fn major_bodies() -> Vec<MajorBody> {
+    query()
+        .await
+        .iter()
+        .filter_map(|s| MajorBody::try_from(s.as_str()).ok())
         .collect()
 }
