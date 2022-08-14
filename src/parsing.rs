@@ -61,13 +61,13 @@ enum EphemerisParserState {
     End,
 }
 
-struct EphemerisParser<'a, 'b, Input: Iterator<Item = &'a str>> {
+struct EphemerisParser<'a, Input: Iterator<Item = &'a str>> {
     state: EphemerisParserState,
-    input: &'b mut Input,
+    input: Input,
 }
 
-impl<'a, 'b, Input: Iterator<Item = &'a str>> EphemerisParser<'a, 'b, Input> {
-    fn new(input: &'b mut Input) -> Self {
+impl<'a, Input: Iterator<Item = &'a str>> EphemerisParser<'a, Input> {
+    fn parse(input: Input) -> Self {
         Self {
             state: EphemerisParserState::WaitingForSoe,
             input,
@@ -75,7 +75,7 @@ impl<'a, 'b, Input: Iterator<Item = &'a str>> EphemerisParser<'a, 'b, Input> {
     }
 }
 
-impl<'a, 'b, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, 'b, Input> {
+impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input> {
     type Item = EphemerisItem;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn test_parsing_ephemeris() {
         let data = include_str!("ephem.txt");
-        let ephem: Vec<_> = EphemerisParser::new(&mut data.lines()).collect();
+        let ephem: Vec<_> = EphemerisParser::parse(data.lines()).collect();
         assert_eq!(4, ephem.len());
         //assert_eq!(EphemerisItem{x: 0})
     }
