@@ -20,7 +20,7 @@ async fn major_bodies() -> Vec<MajorBody> {
         .await
         .unwrap()
         .result
-        .split("\n")
+        .split('\n')
         .filter_map(|s| MajorBody::try_from(s).ok())
         .collect()
 }

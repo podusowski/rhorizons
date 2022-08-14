@@ -6,12 +6,12 @@ use thiserror::Error;
 /// having pre-computed trajectories.
 ///
 /// https://ssd.jpl.nasa.gov/horizons/manual.html#defs
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct MajorBody {
     id: i32,
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum MajorBodyParseError {
     #[error("invalid id")]
     InvalidId(#[source] ParseIntError),
