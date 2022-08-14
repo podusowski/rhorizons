@@ -37,7 +37,7 @@ impl TryFrom<&str> for MajorBody {
         // column, it gets truncated.
 
         let (id, value) = take_or_empty(value, 9);
-        let (name, value) = take_or_empty(value, 35);
+        let (name, _) = take_or_empty(value, 35);
 
         Ok(Self {
             id: id.trim().parse().map_err(MajorBodyParseError::InvalidId)?,
