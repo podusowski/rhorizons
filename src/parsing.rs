@@ -46,15 +46,17 @@ impl TryFrom<&str> for MajorBody {
     }
 }
 
-#[derive(Debug)]
-pub struct EphemerisItem;
+#[derive(Debug, PartialEq)]
+pub struct EphemerisItem {
+    x: f32,
+}
 
 enum EphemerisParserState {
     WaitingForSoe,
     Date,
     Position,
-    Velocity,
-    Other,
+    Velocity { x: f32 },
+    Other { x: f32 },
     End,
 }
 
@@ -92,14 +94,20 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         }
                     }
                     EphemerisParserState::Position => {
-                        self.state = EphemerisParserState::Velocity;
+                        let (x, line) = take_or_empty(line, 4);
+                        assert_eq!(x, " X =");
+                        let (x, line) = take_or_empty(line, 22);
+                        eprintln!("{}", x);
+                        self.state = EphemerisParserState::Velocity {
+                            x: x.trim().parse::<f32>().unwrap(),
+                        };
                     }
-                    EphemerisParserState::Velocity => {
-                        self.state = EphemerisParserState::Other;
+                    EphemerisParserState::Velocity { x } => {
+                        self.state = EphemerisParserState::Other { x };
                     }
-                    EphemerisParserState::Other => {
+                    EphemerisParserState::Other { x } => {
                         self.state = EphemerisParserState::Date;
-                        return Some(EphemerisItem);
+                        return Some(EphemerisItem { x });
                     }
                     EphemerisParserState::End => {
                         // Should we drain input iterator?
@@ -179,6 +187,12 @@ mod tests {
         let data = include_str!("ephem.txt");
         let ephem: Vec<_> = EphemerisParser::parse(data.lines()).collect();
         assert_eq!(4, ephem.len());
-        //assert_eq!(EphemerisItem{x: 0})
+        // TODO: This will probably fail intermittently due to float comparison.
+        assert_eq!(
+            EphemerisItem {
+                x: 1.870010427985840E+02
+            },
+            ephem[0]
+        );
     }
 }
