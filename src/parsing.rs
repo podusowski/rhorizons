@@ -97,9 +97,21 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         let (x, line) = take_or_empty(line, 4);
                         assert_eq!(x, " X =");
                         let (x, line) = take_or_empty(line, 22);
-                        eprintln!("{}", x);
+
+                        let (y, line) = take_or_empty(line, 4);
+                        assert_eq!(y, " Y =");
+                        let (y, line) = take_or_empty(line, 22);
+
+                        let (z, line) = take_or_empty(line, 4);
+                        assert_eq!(z, " Z =");
+                        let (z, _) = take_or_empty(line, 22);
+
                         self.state = EphemerisParserState::Velocity {
-                            position: [x.trim().parse::<f32>().unwrap(), 0., 0.],
+                            position: [
+                                x.trim().parse::<f32>().unwrap(),
+                                y.trim().parse::<f32>().unwrap(),
+                                z.trim().parse::<f32>().unwrap(),
+                            ],
                         };
                     }
                     EphemerisParserState::Velocity { position } => {
@@ -190,7 +202,11 @@ mod tests {
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
             EphemerisItem {
-                position: [1.870010427985840E+02, 0., 0.]
+                position: [
+                    1.870010427985840E+02,
+                    2.484687803242536E+03,
+                    -5.861602653492581E+03
+                ]
             },
             ephem[0]
         );
