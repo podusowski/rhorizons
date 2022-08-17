@@ -1,12 +1,4 @@
-/// Similar to `str::split_at`, but instead panicking, it tries returning what
-/// is possible.
-pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
-    if value.len() > n {
-        (&value[..n], &value[n..])
-    } else {
-        (value, "")
-    }
-}
+use crate::utilities::take_or_empty;
 
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
