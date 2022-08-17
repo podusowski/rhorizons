@@ -48,7 +48,7 @@ impl TryFrom<&str> for MajorBody {
 
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
-    x: f32,
+    position: [f32; 3],
 }
 
 enum EphemerisParserState {
@@ -107,7 +107,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                     }
                     EphemerisParserState::Other { position } => {
                         self.state = EphemerisParserState::Date;
-                        return Some(EphemerisItem { x: position[0] });
+                        return Some(EphemerisItem { position });
                     }
                     EphemerisParserState::End => {
                         // Should we drain input iterator?
@@ -190,7 +190,7 @@ mod tests {
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
             EphemerisItem {
-                x: 1.870010427985840E+02
+                position: [1.870010427985840E+02, 0., 0.]
             },
             ephem[0]
         );
