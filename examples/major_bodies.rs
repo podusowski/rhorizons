@@ -1,10 +1,5 @@
 use chrono::Utc;
-use client::major_bodies;
-
-use crate::client::ephemeris;
-
-mod client;
-mod parsing;
+use rhorizons::{ephemeris, major_bodies};
 
 #[tokio::main]
 async fn main() {
