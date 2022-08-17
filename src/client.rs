@@ -37,6 +37,7 @@ where
     result
 }
 
+/// Get names and identifiers of all major bodies in the Solar System.
 pub async fn major_bodies() -> Vec<MajorBody> {
     query(&[("COMMAND", "MB")])
         .await
@@ -45,6 +46,7 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
+/// Get ephemeris (position and velocity) of a major body.
 pub async fn ephemeris(
     id: i32,
     start_time: DateTime<Utc>,
