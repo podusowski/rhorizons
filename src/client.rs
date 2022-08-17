@@ -1,7 +1,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::parsing::{EphemerisItem, EphemerisParser, MajorBody};
+use crate::{
+    major_bodies::MajorBody,
+    parsing::{EphemerisItem, EphemerisParser},
+};
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
 /// some statuses and `result` field which is just human-readable string
