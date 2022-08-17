@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     major_bodies::MajorBody,
-    parsing::{EphemerisItem, EphemerisParser},
+    ephemeris::{EphemerisItem, EphemerisParser},
 };
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
