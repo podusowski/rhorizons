@@ -55,8 +55,8 @@ enum EphemerisParserState {
     WaitingForSoe,
     Date,
     Position,
-    Velocity { x: f32 },
-    Other { x: f32 },
+    Velocity { position: [f32; 3] },
+    Other { position: [f32; 3] },
     End,
 }
 
@@ -99,15 +99,15 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         let (x, line) = take_or_empty(line, 22);
                         eprintln!("{}", x);
                         self.state = EphemerisParserState::Velocity {
-                            x: x.trim().parse::<f32>().unwrap(),
+                            position: [x.trim().parse::<f32>().unwrap(), 0., 0.],
                         };
                     }
-                    EphemerisParserState::Velocity { x } => {
-                        self.state = EphemerisParserState::Other { x };
+                    EphemerisParserState::Velocity { position } => {
+                        self.state = EphemerisParserState::Other { position };
                     }
-                    EphemerisParserState::Other { x } => {
+                    EphemerisParserState::Other { position } => {
                         self.state = EphemerisParserState::Date;
-                        return Some(EphemerisItem { x });
+                        return Some(EphemerisItem { x: position[0] });
                     }
                     EphemerisParserState::End => {
                         // Should we drain input iterator?
