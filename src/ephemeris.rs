@@ -1,4 +1,4 @@
-use crate::utilities::take_or_empty;
+use crate::utilities::{take_expecting, take_or_empty};
 
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
@@ -48,16 +48,14 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         }
                     }
                     EphemerisParserState::Position => {
-                        let (x, line) = take_or_empty(line, 4);
-                        assert_eq!(x, " X =");
+                        // TODO: Don't panic.
+                        let line = take_expecting(line, " X =").unwrap();
                         let (x, line) = take_or_empty(line, 22);
 
-                        let (y, line) = take_or_empty(line, 4);
-                        assert_eq!(y, " Y =");
+                        let line = take_expecting(line, " Y =").unwrap();
                         let (y, line) = take_or_empty(line, 22);
 
-                        let (z, line) = take_or_empty(line, 4);
-                        assert_eq!(z, " Z =");
+                        let line = take_expecting(line, " Z =").unwrap();
                         let (z, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisParserState::Velocity {
