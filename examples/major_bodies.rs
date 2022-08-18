@@ -1,23 +1,12 @@
-use chrono::Utc;
-use rhorizons::{ephemeris, major_bodies};
+use rhorizons::major_bodies;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
-    for body in major_bodies().await {
-        eprintln!("{:?}", body);
-    }
+    println!("Major bodies in the Solar System.");
 
-    if let Some(body) = major_bodies()
-        .await
-        .iter()
-        .find(|body| body.name == "Earth")
-    {
-        eprintln!("{:?}", body);
-        for vectors in ephemeris(body.id, Utc::now() - chrono::Duration::days(1), Utc::now()).await
-        {
-            eprintln!("{:?}", vectors);
-        }
+    for body in major_bodies().await {
+        println!("{:?}", body);
     }
 }
