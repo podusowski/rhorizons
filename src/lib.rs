@@ -1,4 +1,4 @@
-//! Interact with NASA JPL Horizon system.
+#![doc = include_str!("../README.md")]
 mod client;
 mod ephemeris;
 mod major_bodies;
