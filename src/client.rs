@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    major_bodies::MajorBody,
     ephemeris::{EphemerisItem, EphemerisParser},
+    major_bodies::MajorBody,
 };
 
 /// Generic Horizons response. Their API just gives some JSON with two field,

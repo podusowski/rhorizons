@@ -1,6 +1,6 @@
+use crate::utilities::take_or_empty;
 use std::num::ParseIntError;
 use thiserror::Error;
-use crate::utilities::take_or_empty;
 
 /// Planet, natural satellite, spacecraft, Sun, barycenter, or other objects
 /// having pre-computed trajectories.
@@ -38,8 +38,8 @@ impl TryFrom<&str> for MajorBody {
 
 #[cfg(test)]
 mod tests {
-    use std::num::ParseIntError;
     use super::*;
+    use std::num::ParseIntError;
 
     #[test]
     fn reading_major_bodies() {
