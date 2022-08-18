@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 /// Similar to `str::split_at`, but instead panicking, it tries returning what
 /// is possible.
 pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
@@ -5,6 +7,22 @@ pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
         (&value[..n], &value[n..])
     } else {
         (value, "")
+    }
+}
+
+#[derive(Error, Debug, PartialEq)]
+#[error("str does not contain expected prefix")]
+pub struct TakeExpectingError;
+
+pub fn take_expecting<'a, 'b>(
+    value: &'a str,
+    expected: &'b str,
+) -> Result<&'a str, TakeExpectingError> {
+    let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
+    if prefix == expected {
+        Ok(rest)
+    } else {
+        Err(TakeExpectingError {})
     }
 }
 
@@ -18,5 +36,11 @@ mod tests {
         assert_eq!(("", "a"), take_or_empty("a", 0));
         assert_eq!(("ab", "cd"), take_or_empty("abcd", 2));
         assert_eq!(("ab", ""), take_or_empty("ab", 4));
+    }
+
+    #[test]
+    fn test_take_expecting() {
+        assert_eq!(Ok("b"), take_expecting("ab", "a"));
+        assert_eq!(Err(TakeExpectingError {}), take_expecting("ba", "a"));
     }
 }
