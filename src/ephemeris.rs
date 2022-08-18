@@ -3,14 +3,20 @@ use crate::utilities::{take_expecting, take_or_empty};
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
     position: [f32; 3],
+    velocity: [f32; 3],
 }
 
 enum EphemerisParserState {
     WaitingForSoe,
     Date,
     Position,
-    Velocity { position: [f32; 3] },
-    Other { position: [f32; 3] },
+    Velocity {
+        position: [f32; 3],
+    },
+    Other {
+        position: [f32; 3],
+        velocity: [f32; 3],
+    },
     End,
 }
 
@@ -67,11 +73,28 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         };
                     }
                     EphemerisParserState::Velocity { position } => {
-                        self.state = EphemerisParserState::Other { position };
+                        // TODO: Don't panic.
+                        let line = take_expecting(line, " VX=").unwrap();
+                        let (vx, line) = take_or_empty(line, 22);
+
+                        let line = take_expecting(line, " VY=").unwrap();
+                        let (vy, line) = take_or_empty(line, 22);
+
+                        let line = take_expecting(line, " VZ=").unwrap();
+                        let (vz, _) = take_or_empty(line, 22);
+
+                        self.state = EphemerisParserState::Other {
+                            position,
+                            velocity: [
+                                vx.trim().parse::<f32>().unwrap(),
+                                vy.trim().parse::<f32>().unwrap(),
+                                vz.trim().parse::<f32>().unwrap(),
+                            ],
+                        };
                     }
-                    EphemerisParserState::Other { position } => {
+                    EphemerisParserState::Other { position, velocity } => {
                         self.state = EphemerisParserState::Date;
-                        return Some(EphemerisItem { position });
+                        return Some(EphemerisItem { position, velocity });
                     }
                     EphemerisParserState::End => {
                         // Should we drain input iterator?
@@ -102,6 +125,12 @@ mod tests {
                     1.870010427985840E+02,
                     2.484687803242536E+03,
                     -5.861602653492581E+03
+                ],
+
+                velocity: [
+                    -3.362664133558439E-01,
+                    1.344100266143978E-02,
+                    -5.030275220358716E-03
                 ]
             },
             ephem[0]
