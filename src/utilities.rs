@@ -10,7 +10,7 @@ pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
     }
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 #[error("str does not contain expected prefix")]
 pub struct TakeExpectingError;
 

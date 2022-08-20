@@ -17,7 +17,10 @@ async fn main() {
     let start_time = Utc::now() - chrono::Duration::days(1);
     let stop_time = Utc::now();
 
-    println!("Earth's position and velocity from {} to {}:", start_time, stop_time);
+    println!(
+        "Earth's position and velocity from {} to {}:",
+        start_time, stop_time
+    );
 
     for vectors in ephemeris(earth.id, start_time, stop_time).await {
         println!("{:?}", vectors);
