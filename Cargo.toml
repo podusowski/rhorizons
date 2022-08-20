@@ -1,5 +1,10 @@
 [package]
 name = "rhorizons"
+description = "Access NASA JPL Horizons system. Get Solar System bodies, their positions and velocities."
+categories = ["areospace"]
+keywords = ["nasa", "horizons", "solar system"]
+license = "MIT"
+repository = "https://github.com/podusowski/rhorizons"
 version = "0.1.0"
 edition = "2021"
 
