@@ -2,8 +2,8 @@ use crate::utilities::{take_expecting, take_or_empty};
 
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
-    position: [f32; 3],
-    velocity: [f32; 3],
+    pub position: [f32; 3],
+    pub velocity: [f32; 3],
 }
 
 enum EphemerisParserState {

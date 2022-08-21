@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use rhorizons::{ephemeris, major_bodies};
 
 #[tokio::main]
@@ -14,15 +14,18 @@ async fn main() {
 
     println!("Found Earth's Horizons identifier: {}.", earth.id);
 
-    let start_time = Utc::now() - chrono::Duration::days(1);
+    let start_time = Utc::now() - Duration::days(1);
     let stop_time = Utc::now();
 
     println!(
-        "Earth's position and velocity from {} to {}:",
+        "Earth's positions and velocities from {} to {}:",
         start_time, stop_time
     );
 
     for vectors in ephemeris(earth.id, start_time, stop_time).await {
-        println!("{:?}", vectors);
+        println!(
+            "position: {:?}, velocity: {:?}",
+            vectors.position, vectors.velocity
+        );
     }
 }
