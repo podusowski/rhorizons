@@ -5,10 +5,13 @@ code, therefore you probably want to use it in conjunction with `tokio`.
 Examples
 --------
 ```rust
-println!("Major bodies in the Solar System.");
+#[tokio::main]
+async fn main() {
+    println!("Major bodies in the Solar System.");
 
-for body in rhorizons::major_bodies().await {
-    println!("{} ({})", body.name, body.id);
+    for body in rhorizons::major_bodies().await {
+        println!("{} ({})", body.name, body.id);
+    }
 }
 ```
 
