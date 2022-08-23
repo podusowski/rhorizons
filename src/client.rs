@@ -60,7 +60,7 @@ pub async fn ephemeris(
         // Select Sun as a observer. Note that Solar System Barycenter is in a
         // slightly different place.
         // https://astronomy.stackexchange.com/questions/44851/
-        ("CENTER", "10"),
+        ("CENTER", "500@10"),
         ("EPHEM_TYPE", "VECTORS"),
         // https://ssd.jpl.nasa.gov/horizons/manual.html#time
         (
