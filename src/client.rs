@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -17,16 +17,20 @@ struct HorizonsResponse {
     result: String,
 }
 
-/// Opinionated retry for async functions.
+/// Opinionated retry for async functions. Actual number of retries and delay
+/// between them is implementation detail and cannot be parametrized.
 async fn retry_couple_times<F, R, E>(f: impl Fn() -> F) -> R
 where
     F: Future<Output = Result<R, E>>,
 {
-    for _ in [1..3] {
+    for n in 1..10 {
+        log::trace!("try {}", n);
         if let Ok(result) = f().await {
             return result;
         }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await
     }
+    // TODO: Don't panic.
     panic!("max retries exceeded");
 }
 
@@ -45,10 +49,10 @@ where
             .query(parameters)
             .send()
             .await
-            .unwrap()
+            .map_err(|_| HorizonsQueryError)?
             .json::<HorizonsResponse>()
             .await
-            .unwrap()
+            .map_err(|_| HorizonsQueryError)?
             .result
             .split('\n')
             .map(str::to_owned)
