@@ -1,5 +1,8 @@
+use std::future::Future;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::{
     ephemeris::{EphemerisItem, EphemerisParser},
@@ -14,30 +17,49 @@ struct HorizonsResponse {
     result: String,
 }
 
+async fn retry_couple_times<F, R, E>(f: impl Fn() -> F) -> R
+where
+    F: Future<Output = Result<R, E>>,
+{
+    for _ in [1..3] {
+        if let Ok(result) = f().await {
+            return result;
+        }
+    }
+    panic!("max retries exceeded");
+}
+
+#[derive(Error, Debug)]
+#[error("error returned from Horizons")]
+struct HorizonsQueryError;
+
 /// Query the Horizons API, returning a result in form of lines.
 async fn query<T>(parameters: &T) -> Vec<String>
 where
     T: Serialize + ?Sized,
 {
-    let result = reqwest::Client::new()
-        .get("https://ssd.jpl.nasa.gov/api/horizons.api")
-        .query(parameters)
-        .send()
-        .await
-        .unwrap()
-        .json::<HorizonsResponse>()
-        .await
-        .unwrap()
-        .result
-        .split('\n')
-        .map(str::to_owned)
-        .collect::<Vec<String>>();
+    retry_couple_times(async || -> Result<Vec<String>, HorizonsQueryError> {
+        let result = reqwest::Client::new()
+            .get("https://ssd.jpl.nasa.gov/api/horizons.api")
+            .query(parameters)
+            .send()
+            .await
+            .unwrap()
+            .json::<HorizonsResponse>()
+            .await
+            .unwrap()
+            .result
+            .split('\n')
+            .map(str::to_owned)
+            .collect::<Vec<String>>();
 
-    for line in &result {
-        log::trace!("{}", line);
-    }
+        for line in &result {
+            log::trace!("{}", line);
+        }
 
-    result
+        Ok(result)
+    })
+    .await
 }
 
 /// Get names and identifiers of all major bodies in the Solar System.
