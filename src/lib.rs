@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-#![feature(async_closure)]
 
 mod client;
 mod ephemeris;

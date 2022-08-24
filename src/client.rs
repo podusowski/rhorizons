@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -17,15 +15,43 @@ struct HorizonsResponse {
     result: String,
 }
 
-/// Opinionated retry for async functions. Actual number of retries and delay
-/// between them is implementation detail and cannot be parametrized.
-async fn retry_couple_times<F, R, E>(f: impl Fn() -> F) -> R
+#[derive(Error, Debug)]
+#[error("error returned from Horizons")]
+struct HorizonsQueryError;
+
+/// Query the Horizons API, returning a result in form of lines.
+async fn query<T>(parameters: &T) -> Result<Vec<String>, HorizonsQueryError>
 where
-    F: Future<Output = Result<R, E>>,
+    T: Serialize,
+{
+    let result = reqwest::Client::new()
+        .get("https://ssd.jpl.nasa.gov/api/horizons.api")
+        .query(parameters)
+        .send()
+        .await
+        .map_err(|_| HorizonsQueryError)?
+        .json::<HorizonsResponse>()
+        .await
+        .map_err(|_| HorizonsQueryError)?
+        .result
+        .split('\n')
+        .map(str::to_owned)
+        .collect::<Vec<String>>();
+
+    for line in &result {
+        log::trace!("{}", line);
+    }
+
+    Ok(result)
+}
+
+async fn query_with_retries<T>(parameters: &T) -> Vec<String>
+where
+    T: Serialize,
 {
     for n in 1..10 {
         log::trace!("try {}", n);
-        if let Ok(result) = f().await {
+        if let Ok(result) = query(parameters).await {
             return result;
         }
         tokio::time::sleep(std::time::Duration::from_secs(1)).await
@@ -34,42 +60,9 @@ where
     panic!("max retries exceeded");
 }
 
-#[derive(Error, Debug)]
-#[error("error returned from Horizons")]
-struct HorizonsQueryError;
-
-/// Query the Horizons API, returning a result in form of lines.
-async fn query<T>(parameters: &T) -> Vec<String>
-where
-    T: Serialize,
-{
-    retry_couple_times(async || -> Result<Vec<String>, HorizonsQueryError> {
-        let result = reqwest::Client::new()
-            .get("https://ssd.jpl.nasa.gov/api/horizons.api")
-            .query(parameters)
-            .send()
-            .await
-            .map_err(|_| HorizonsQueryError)?
-            .json::<HorizonsResponse>()
-            .await
-            .map_err(|_| HorizonsQueryError)?
-            .result
-            .split('\n')
-            .map(str::to_owned)
-            .collect::<Vec<String>>();
-
-        for line in &result {
-            log::trace!("{}", line);
-        }
-
-        Ok(result)
-    })
-    .await
-}
-
 /// Get names and identifiers of all major bodies in the Solar System.
 pub async fn major_bodies() -> Vec<MajorBody> {
-    query(&[("COMMAND", "MB")])
+    query_with_retries(&[("COMMAND", "MB")])
         .await
         .iter()
         .filter_map(|s| MajorBody::try_from(s.as_str()).ok())
@@ -83,7 +76,7 @@ pub async fn ephemeris(
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
 ) -> Vec<EphemerisItem> {
-    let result = query(&[
+    let result = query_with_retries(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
         // slightly different place.
