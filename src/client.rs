@@ -41,7 +41,7 @@ struct HorizonsQueryError;
 /// Query the Horizons API, returning a result in form of lines.
 async fn query<T>(parameters: &T) -> Vec<String>
 where
-    T: Serialize + ?Sized,
+    T: Serialize,
 {
     retry_couple_times(async || -> Result<Vec<String>, HorizonsQueryError> {
         let result = reqwest::Client::new()
