@@ -17,6 +17,7 @@ struct HorizonsResponse {
     result: String,
 }
 
+/// Opinionated retry for async functions.
 async fn retry_couple_times<F, R, E>(f: impl Fn() -> F) -> R
 where
     F: Future<Output = Result<R, E>>,
