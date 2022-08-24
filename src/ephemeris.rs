@@ -1,5 +1,6 @@
 use crate::utilities::{take_expecting, take_or_empty};
 
+/// Position (in km) and velocity (in km/s) of a body.
 #[derive(Debug, PartialEq)]
 pub struct EphemerisItem {
     pub position: [f32; 3],

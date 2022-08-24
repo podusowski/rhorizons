@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -76,7 +76,8 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
-/// Get ephemeris (position and velocity) of a major body.
+/// Get ephemeris (position and velocity) of a major body. Coordinates are
+/// relative to the Sun's center.
 pub async fn ephemeris(
     id: i32,
     start_time: DateTime<Utc>,
