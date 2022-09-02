@@ -18,11 +18,15 @@ pub fn take_expecting<'a, 'b>(
     value: &'a str,
     expected: &'b str,
 ) -> Result<&'a str, TakeExpectingError<'a>> {
-    let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
-    if prefix == expected {
-        Ok(rest)
-    } else {
+    if expected.len() > value.len() {
         Err(TakeExpectingError(value))
+    } else {
+        let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
+        if prefix == expected {
+            Ok(rest)
+        } else {
+            Err(TakeExpectingError(value))
+        }
     }
 }
 
@@ -41,6 +45,11 @@ mod tests {
     #[test]
     fn test_take_expecting() {
         assert_eq!(Ok("b"), take_expecting("ab", "a"));
+        assert_eq!(Ok(""), take_expecting("a", "a"));
         assert_eq!(Err(TakeExpectingError("ba")), take_expecting("ba", "a"));
+        assert_eq!(
+            Err(TakeExpectingError("hay")),
+            take_expecting("hay", "needle")
+        );
     }
 }
