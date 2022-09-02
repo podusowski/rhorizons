@@ -9,15 +9,15 @@ struct Properties {
 fn parse_properties<'a>(data: impl Iterator<Item = &'a str>) -> Properties {
     // GEOPHYSICAL PROPERTIES (revised May 9, 2022):
     //  Vol. Mean Radius (km)    = 6371.01+-0.02   Mass x10^24 (kg)= 5.97219+-0.0006
-    for line in data {
-        let (_, right) = take_or_empty(line, 45);
-        if let Ok(multiplier) = take_expecting(right, "Mass x10^") {
-            let (multiplier, line) = take_or_empty(multiplier, 2);
-            let multiplier = multiplier.parse::<f32>().unwrap();
-            if let Ok(line) = take_expecting(line, " (kg)= ") {
-                let (mass, rest) = take_or_empty(line, 7);
-                let mass = mass.parse::<f32>().unwrap();
-                let mass = mass * 10_f32.powf(multiplier);
+    for input in data {
+        let (_, input) = take_or_empty(input, 45);
+        if let Ok(multiplier) = take_expecting(input, "Mass x10^") {
+            let (exponent, input) = take_or_empty(multiplier, 2);
+            let exponent = exponent.parse::<f32>().unwrap();
+            if let Ok(line) = take_expecting(input, " (kg)= ") {
+                let (mantissa, _) = take_or_empty(line, 7);
+                let mantissa = mantissa.parse::<f32>().unwrap();
+                let mass = mantissa * 10_f32.powf(exponent);
                 return Properties { mass };
             }
         }
