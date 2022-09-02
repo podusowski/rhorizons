@@ -6,16 +6,16 @@ use crate::utilities::{take_expecting, take_or_empty};
 
 #[derive(Error, Debug, PartialEq, Eq)]
 #[error("could not parse object's geophysical properties")]
-struct ParseError;
+pub struct ParseError;
 
 #[derive(Debug, PartialEq)]
-struct Properties {
+pub struct Properties {
     /// Mass (in kg).
-    mass: f32,
+    pub mass: f32,
 }
 
 impl Properties {
-    fn parse<'a>(data: impl Iterator<Item = &'a str>) -> Result<Properties, ParseError> {
+    pub fn parse<'a>(data: impl Iterator<Item = &'a str>) -> Result<Properties, ParseError> {
         // GEOPHYSICAL PROPERTIES (revised May 9, 2022):
         //  Vol. Mean Radius (km)    = 6371.01+-0.02   Mass x10^24 (kg)= 5.97219+-0.000 6
         for input in data {

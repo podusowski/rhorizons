@@ -5,6 +5,7 @@ use thiserror::Error;
 use crate::{
     ephemeris::{EphemerisItem, EphemerisParser},
     major_bodies::MajorBody,
+    properties::Properties,
 };
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
@@ -96,4 +97,9 @@ pub async fn ephemeris(
     .await;
 
     EphemerisParser::parse(result.iter().map(String::as_str)).collect()
+}
+
+pub async fn geophysical_properties(id: i32) -> Properties {
+    let result = query_with_retries(&[("COMMAND", id.to_string().as_str())]).await;
+    Properties::parse(result.iter().map(String::as_str)).unwrap()
 }
