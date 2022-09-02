@@ -36,6 +36,15 @@ async fn getting_earths_ephemeris() {
 }
 
 #[tokio::test]
+async fn getting_earths_mass() {
+    init();
+
+    let properties = geophysical_properties(399).await;
+
+    assert_eq!(5.97219e24, properties.mass);
+}
+
+#[tokio::test]
 async fn getting_jupiter_ephemeris() {
     init();
 

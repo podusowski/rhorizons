@@ -11,18 +11,22 @@ pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
-#[error("str does not contain expected prefix")]
-pub struct TakeExpectingError;
+#[error("'{0}' does not contain expected prefix")]
+pub struct TakeExpectingError<'a>(&'a str);
 
 pub fn take_expecting<'a, 'b>(
     value: &'a str,
     expected: &'b str,
-) -> Result<&'a str, TakeExpectingError> {
-    let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
-    if prefix == expected {
-        Ok(rest)
+) -> Result<&'a str, TakeExpectingError<'a>> {
+    if expected.len() > value.len() {
+        Err(TakeExpectingError(value))
     } else {
-        Err(TakeExpectingError {})
+        let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
+        if prefix == expected {
+            Ok(rest)
+        } else {
+            Err(TakeExpectingError(value))
+        }
     }
 }
 
@@ -41,6 +45,11 @@ mod tests {
     #[test]
     fn test_take_expecting() {
         assert_eq!(Ok("b"), take_expecting("ab", "a"));
-        assert_eq!(Err(TakeExpectingError {}), take_expecting("ba", "a"));
+        assert_eq!(Ok(""), take_expecting("a", "a"));
+        assert_eq!(Err(TakeExpectingError("ba")), take_expecting("ba", "a"));
+        assert_eq!(
+            Err(TakeExpectingError("hay")),
+            take_expecting("hay", "needle")
+        );
     }
 }
