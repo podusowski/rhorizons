@@ -72,7 +72,7 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
-/// Get ephemeris (position and velocity) of a major body. Coordinates are
+/// Get vector ephemeris (position and velocity) of a major body. Coordinates are
 /// relative to the Sun's center.
 pub async fn ephemeris_vector(
     id: i32,
@@ -100,7 +100,8 @@ pub async fn ephemeris_vector(
 
     EphemerisVectorParser::parse(result.iter().map(String::as_str)).collect()
 }
-
+/// Get orbital element ephemeris (e.g. eccentricity, semi-major axis, ...) of a
+/// major body relative to the Sun's center
 pub async fn ephemeris_orbital_elements(
     id: i32,
     start_time: DateTime<Utc>,

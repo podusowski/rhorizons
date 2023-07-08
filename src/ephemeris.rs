@@ -7,23 +7,85 @@ pub struct EphemerisVectorItem {
     pub velocity: [f32; 3],
 }
 
+/// Orbital Elements of a body. Units are km, s and degrees
+///
+/// | Horizons Symbol | Meaning                     | Mathematical Symbol | Unit                |
+/// |-----------------|-----------------------------|---------------------|---------------------|
+/// | EC              | Eccentricity                | *e*                 |                     |
+/// | QR              | Periapsis distance          | *q*                 | km                  |
+/// | IN              | Inclination w.r.t X-Y plane | *i*                 | degrees             |
+/// | OM              | Longitude of Ascending Node | Ω (Omega)           | degrees             |
+/// | W               | Argument of Perifocus       | *ω*                 | degrees             |
+/// | Tp              | Time of periapsis           |                     | Julian Day Number   |
+/// | N               | Mean motion                 | *n*                 | degrees/sec         |
+/// | MA              | Mean anomaly                | *M*                 | degrees             |
+/// | TA              | True anomaly                | *ν*, nu             | degrees             |
+/// | A               | Semi-major axis             | *a*                 | km                  |
+/// | AD              | Apoapsis distance           |                     | km                  |
+/// | PR              | Sidereal orbit period       |                     | sec                 |
+///
+/// For a detailed explenation of keplarian orbital elements, visit [Wikipedia](https://en.wikipedia.org/wiki/Orbital_elements)
 #[derive(Debug, PartialEq)]
 pub struct EphemerisOrbitalElementsItem {
-    pub eccentricity: f32,       //EC     Eccentricity, e
-    pub periapsis_distance: f32, //QR     Periapsis distance, q (km)
-    pub inclination: f32,        //IN     Inclination w.r.t X-Y plane, i (degrees)
+    /// Describes the "roundness" of the orbit.
+    ///
+    /// Value of 0 means a circle, everything until 1 is an eliptic orbit.  
+    /// A value of 1 is a parabolic trajectory and everythin greater 1 a hyperbolic trajectory.  
+    /// See <https://en.wikipedia.org/wiki/Eccentricity_(orbit)>
+    pub eccentricity: f32,
+    /// Distance from the center to the nearest point of the orbit in kilometer (km)
+    /// 
+    /// See <https://en.wikipedia.org/wiki/Apsis>
+    pub periapsis_distance: f32,
+    /// Tilt of the orbit
+    ///
+    /// Expressed in degrees in reference to the X-Y plane  
+    /// For futher information see <https://en.wikipedia.org/wiki/Inclination>
+    pub inclination: f32,
 
-    pub longitude_of_ascending_node: f32, //OM     Longitude of Ascending Node, OMEGA, (degrees)
-    pub argument_of_perifocus: f32,       //W      Argument of Perifocus, w (degrees)
-    pub time_of_periapsis: f32,           //Tp     Time of periapsis (Julian Day Number)
+    /// The point, were the orbit crosses the reference plane (X-Y plane) from south to north
+    /// 
+    /// The unit of this value is in degrees.  
+    /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
+    pub longitude_of_ascending_node: f32,
+    /// Angle in degrees of the periapsis to the ascending node, in the direction of motion.
+    /// 
+    /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
+    pub argument_of_perifocus: f32,
+    /// The timestamp (Julian Day Number) at which the body reaches the periapsis of the orbit
+    /// 
+    /// <https://en.wikipedia.org/wiki/Apsis#Time_of_perihelion>
+    pub time_of_periapsis: f32,
 
-    pub mean_motion: f32,  //N      Mean motion, n (degrees/sec)
-    pub mean_anomaly: f32, //MA     Mean anomaly, M (degrees)
-    pub true_anomaly: f32, //TA     True anomaly, nu (degrees)
+    /// The angular speed (degrees/sec) of a body to complete one orbit
+    /// 
+    /// Assumes constant speed in a circular orbit.  
+    /// <https://en.wikipedia.org/wiki/Mean_motion>
+    pub mean_motion: f32,
+    /// Orbital distance from the periapsis to the moving body.
+    /// 
+    /// The angle in degrees is in reference to a circular orbit.  
+    /// <https://en.wikipedia.org/wiki/Mean_anomaly>
+    pub mean_anomaly: f32,
+    /// Angle in degrees between the moving body and the periapsis of the orbit.
+    /// 
+    /// The angle is defined in relation to the main focus point.  
+    /// <https://en.wikipedia.org/wiki/True_anomaly>
+    pub true_anomaly: f32,
 
-    pub semi_major_axis: f32,       //A      Semi-major axis, a (km)
-    pub apoapsis_distance: f32,     //AD     Apoapsis distance (km)
-    pub siderral_orbit_period: f32, //PR     Sidereal orbit period (sec)
+    /// The sum of the periapsis and apoapsis distances divided by two in kilometer (km)
+    /// 
+    /// <https://en.wikipedia.org/wiki/Semimajor_axis>
+    pub semi_major_axis: f32,
+    /// Distance from the center to the farthest point of the orbit in kilometer (km)
+    /// 
+    /// <https://en.wikipedia.org/wiki/Apsis>
+    pub apoapsis_distance: f32,
+    /// Time to complete on orbit in seconds
+    /// 
+    /// Sidereal refers to the default period of an orbit.  
+    /// <https://en.wikipedia.org/wiki/Orbital_period>
+    pub siderral_orbit_period: f32,
 }
 
 enum EphemerisVectorParserState {
