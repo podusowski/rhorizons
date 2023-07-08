@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    ephemeris::{EphemerisItem, EphemerisParser},
+    ephemeris::{EphemerisVectorItem, EphemerisVectorParser},
     major_bodies::MajorBody,
 };
 
@@ -71,11 +71,11 @@ pub async fn major_bodies() -> Vec<MajorBody> {
 
 /// Get ephemeris (position and velocity) of a major body. Coordinates are
 /// relative to the Sun's center.
-pub async fn ephemeris(
+pub async fn ephemeris_vector(
     id: i32,
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
-) -> Vec<EphemerisItem> {
+) -> Vec<EphemerisVectorItem> {
     let result = query_with_retries(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
@@ -95,5 +95,5 @@ pub async fn ephemeris(
     ])
     .await;
 
-    EphemerisParser::parse(result.iter().map(String::as_str)).collect()
+    EphemerisVectorParser::parse(result.iter().map(String::as_str)).collect()
 }

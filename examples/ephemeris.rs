@@ -22,7 +22,7 @@ async fn main() {
         start_time, stop_time
     );
 
-    for vectors in ephemeris(earth.id, start_time, stop_time).await {
+    for vectors in ephemeris_vector(earth.id, start_time, stop_time).await {
         println!(
             "position: {:?}, velocity: {:?}",
             vectors.position, vectors.velocity

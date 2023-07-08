@@ -14,9 +14,9 @@ pub fn take_or_empty(value: &str, n: usize) -> (&str, &str) {
 #[error("str does not contain expected prefix")]
 pub struct TakeExpectingError;
 
-pub fn take_expecting<'a, 'b>(
+pub fn take_expecting<'a>(
     value: &'a str,
-    expected: &'b str,
+    expected: &str,
 ) -> Result<&'a str, TakeExpectingError> {
     let (prefix, rest) = (&value[..expected.len()], &value[expected.len()..]);
     if prefix == expected {

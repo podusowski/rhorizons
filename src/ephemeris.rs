@@ -2,12 +2,12 @@ use crate::utilities::{take_expecting, take_or_empty};
 
 /// Position (in km) and velocity (in km/s) of a body.
 #[derive(Debug, PartialEq)]
-pub struct EphemerisItem {
+pub struct EphemerisVectorItem {
     pub position: [f32; 3],
     pub velocity: [f32; 3],
 }
 
-enum EphemerisParserState {
+enum EphemerisVectorParserState {
     WaitingForSoe,
     Date,
     Position,
@@ -21,40 +21,40 @@ enum EphemerisParserState {
     End,
 }
 
-pub struct EphemerisParser<'a, Input: Iterator<Item = &'a str>> {
-    state: EphemerisParserState,
+pub struct EphemerisVectorParser<'a, Input: Iterator<Item = &'a str>> {
+    state: EphemerisVectorParserState,
     input: Input,
 }
 
-impl<'a, Input: Iterator<Item = &'a str>> EphemerisParser<'a, Input> {
+impl<'a, Input: Iterator<Item = &'a str>> EphemerisVectorParser<'a, Input> {
     pub fn parse(input: Input) -> Self {
         Self {
-            state: EphemerisParserState::WaitingForSoe,
+            state: EphemerisVectorParserState::WaitingForSoe,
             input,
         }
     }
 }
 
-impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input> {
-    type Item = EphemerisItem;
+impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a, Input> {
+    type Item = EphemerisVectorItem;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(line) = self.input.next() {
                 match self.state {
-                    EphemerisParserState::WaitingForSoe => {
+                    EphemerisVectorParserState::WaitingForSoe => {
                         if line == "$$SOE" {
-                            self.state = EphemerisParserState::Date;
+                            self.state = EphemerisVectorParserState::Date;
                         }
                     }
-                    EphemerisParserState::Date => {
+                    EphemerisVectorParserState::Date => {
                         if line == "$$EOE" {
-                            self.state = EphemerisParserState::End;
+                            self.state = EphemerisVectorParserState::End;
                         } else {
-                            self.state = EphemerisParserState::Position;
+                            self.state = EphemerisVectorParserState::Position;
                         }
                     }
-                    EphemerisParserState::Position => {
+                    EphemerisVectorParserState::Position => {
                         // TODO: Don't panic.
                         let line = take_expecting(line, " X =").unwrap();
                         let (x, line) = take_or_empty(line, 22);
@@ -65,7 +65,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         let line = take_expecting(line, " Z =").unwrap();
                         let (z, _) = take_or_empty(line, 22);
 
-                        self.state = EphemerisParserState::Velocity {
+                        self.state = EphemerisVectorParserState::Velocity {
                             position: [
                                 x.trim().parse::<f32>().unwrap(),
                                 y.trim().parse::<f32>().unwrap(),
@@ -73,7 +73,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                             ],
                         };
                     }
-                    EphemerisParserState::Velocity { position } => {
+                    EphemerisVectorParserState::Velocity { position } => {
                         // TODO: Don't panic.
                         let line = take_expecting(line, " VX=").unwrap();
                         let (vx, line) = take_or_empty(line, 22);
@@ -84,7 +84,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                         let line = take_expecting(line, " VZ=").unwrap();
                         let (vz, _) = take_or_empty(line, 22);
 
-                        self.state = EphemerisParserState::Other {
+                        self.state = EphemerisVectorParserState::Other {
                             position,
                             velocity: [
                                 vx.trim().parse::<f32>().unwrap(),
@@ -93,11 +93,11 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisParser<'a, Input
                             ],
                         };
                     }
-                    EphemerisParserState::Other { position, velocity } => {
-                        self.state = EphemerisParserState::Date;
-                        return Some(EphemerisItem { position, velocity });
+                    EphemerisVectorParserState::Other { position, velocity } => {
+                        self.state = EphemerisVectorParserState::Date;
+                        return Some(EphemerisVectorItem { position, velocity });
                     }
-                    EphemerisParserState::End => {
+                    EphemerisVectorParserState::End => {
                         // Should we drain input iterator?
                         return None;
                     }
@@ -116,12 +116,12 @@ mod tests {
 
     #[test]
     fn test_parsing_ephemeris() {
-        let data = include_str!("ephem.txt");
-        let ephem: Vec<_> = EphemerisParser::parse(data.lines()).collect();
+        let data = include_str!("vector.txt");
+        let ephem: Vec<_> = EphemerisVectorParser::parse(data.lines()).collect();
         assert_eq!(4, ephem.len());
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
-            EphemerisItem {
+            EphemerisVectorItem {
                 position: [
                     1.870010427985840E+02,
                     2.484687803242536E+03,
