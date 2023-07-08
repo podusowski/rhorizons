@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use rhorizons::{ephemeris, major_bodies};
+use rhorizons::{ephemeris_vector, major_bodies};
 
 #[tokio::main]
 async fn main() {
