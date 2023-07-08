@@ -6,6 +6,6 @@ mod ephemeris;
 mod major_bodies;
 mod utilities;
 
-pub use client::{ephemeris_vector, major_bodies, ephemeris_orbital_elements};
+pub use client::{ephemeris_orbital_elements, ephemeris_vector, major_bodies};
 pub use ephemeris::EphemerisVectorItem;
 pub use major_bodies::MajorBody;

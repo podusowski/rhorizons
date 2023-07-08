@@ -9,20 +9,21 @@ pub struct EphemerisVectorItem {
 
 #[derive(Debug, PartialEq)]
 pub struct EphemerisOrbitalElementsItem {
-    pub eccentricity: f32, //EC     Eccentricity, e
-    //pub periapsis_distance: f32, //QR     Periapsis distance, q (km)
-    pub inclination: f32, //IN     Inclination w.r.t X-Y plane, i (degrees)
+    pub eccentricity: f32,       //EC     Eccentricity, e
+    pub periapsis_distance: f32, //QR     Periapsis distance, q (km)
+    pub inclination: f32,        //IN     Inclination w.r.t X-Y plane, i (degrees)
 
     pub longitude_of_ascending_node: f32, //OM     Longitude of Ascending Node, OMEGA, (degrees)
     pub argument_of_perifocus: f32,       //W      Argument of Perifocus, w (degrees)
-    //pub time_of_periapsis: f32,  //Tp     Time of periapsis (Julian Day Number)
+    pub time_of_periapsis: f32,           //Tp     Time of periapsis (Julian Day Number)
 
-    //pub mean_motion: f32,  //N      Mean motion, n (degrees/sec)
+    pub mean_motion: f32,  //N      Mean motion, n (degrees/sec)
     pub mean_anomaly: f32, //MA     Mean anomaly, M (degrees)
-    //pub true_anomaly: f32,  //TA     True anomaly, nu (degrees)
-    pub semi_major_axis: f32, //A      Semi-major axis, a (km)
-                              //pub apoapsis_distance: f32,  //AD     Apoapsis distance (km)
-                              //pub siderral_orbit_period: f32  //PR     Sidereal orbit period (sec)
+    pub true_anomaly: f32, //TA     True anomaly, nu (degrees)
+
+    pub semi_major_axis: f32,       //A      Semi-major axis, a (km)
+    pub apoapsis_distance: f32,     //AD     Apoapsis distance (km)
+    pub siderral_orbit_period: f32, //PR     Sidereal orbit period (sec)
 }
 
 enum EphemerisVectorParserState {
@@ -42,23 +43,33 @@ enum EphemerisVectorParserState {
 enum EphemerisOrbitalElementsParserState {
     WaitingForSoe,
     WaitingForDate,
-    WaitingForEccentricityAndInclination,
-    EccentricityAndInclination {
+    WaitingForFirstRow,
+    FirstRow {
         eccentricity: f32,
+        periapsis_distance: f32,
         inclination: f32,
     },
-    AddedAscendingNodeAndPericfocus {
+    SecondRow {
         eccentricity: f32,
+        periapsis_distance: f32,
         inclination: f32,
+
         longitude_of_ascending_node: f32,
         argument_of_perifocus: f32,
+        time_of_periapsis: f32,
     },
-    AddedMeanAnomaly {
+    ThirdRow {
         eccentricity: f32,
+        periapsis_distance: f32,
         inclination: f32,
+
         longitude_of_ascending_node: f32,
         argument_of_perifocus: f32,
+        time_of_periapsis: f32,
+
+        mean_motion: f32,
         mean_anomaly: f32,
+        true_anomaly: f32,
     },
     End,
 }
@@ -183,27 +194,28 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         if line == "$$EOE" {
                             self.state = EphemerisOrbitalElementsParserState::End;
                         } else {
-                            self.state = EphemerisOrbitalElementsParserState::WaitingForEccentricityAndInclination;
+                            self.state = EphemerisOrbitalElementsParserState::WaitingForFirstRow;
                         }
                     }
-                    EphemerisOrbitalElementsParserState::WaitingForEccentricityAndInclination => {
+                    EphemerisOrbitalElementsParserState::WaitingForFirstRow => {
                         let line = take_expecting(line, " EC=").unwrap();
                         let (eccentricity, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " QR=").unwrap();
-                        let (_periapsis_distance, line) = take_or_empty(line, 22);
+                        let (periapsis_distance, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " IN=").unwrap();
                         let (inclination, _) = take_or_empty(line, 22);
 
-                        self.state =
-                            EphemerisOrbitalElementsParserState::EccentricityAndInclination {
-                                eccentricity: eccentricity.trim().parse::<f32>().unwrap(),
-                                inclination: inclination.trim().parse::<f32>().unwrap(),
-                            };
+                        self.state = EphemerisOrbitalElementsParserState::FirstRow {
+                            eccentricity: eccentricity.trim().parse::<f32>().unwrap(),
+                            periapsis_distance: periapsis_distance.trim().parse::<f32>().unwrap(),
+                            inclination: inclination.trim().parse::<f32>().unwrap(),
+                        };
                     }
-                    EphemerisOrbitalElementsParserState::EccentricityAndInclination {
+                    EphemerisOrbitalElementsParserState::FirstRow {
                         eccentricity,
+                        periapsis_distance,
                         inclination,
                     } => {
                         let line = take_expecting(line, " OM=").unwrap();
@@ -213,70 +225,90 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         let (argument_of_perifocus, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " Tp=").unwrap();
-                        let (_time_of_periapsis, _) = take_or_empty(line, 22);
+                        let (time_of_periapsis, _) = take_or_empty(line, 22);
 
-                        self.state =
-                            EphemerisOrbitalElementsParserState::AddedAscendingNodeAndPericfocus {
-                                eccentricity,
-                                inclination,
-                                longitude_of_ascending_node: longitude_of_ascending_node
-                                    .trim()
-                                    .parse::<f32>()
-                                    .unwrap(),
-                                argument_of_perifocus: argument_of_perifocus
-                                    .trim()
-                                    .parse::<f32>()
-                                    .unwrap(),
-                            };
+                        self.state = EphemerisOrbitalElementsParserState::SecondRow {
+                            eccentricity,
+                            periapsis_distance,
+                            inclination,
+                            longitude_of_ascending_node: longitude_of_ascending_node
+                                .trim()
+                                .parse::<f32>()
+                                .unwrap(),
+                            argument_of_perifocus: argument_of_perifocus
+                                .trim()
+                                .parse::<f32>()
+                                .unwrap(),
+                            time_of_periapsis: time_of_periapsis.trim().parse::<f32>().unwrap(),
+                        };
                     }
-                    EphemerisOrbitalElementsParserState::AddedAscendingNodeAndPericfocus {
+                    EphemerisOrbitalElementsParserState::SecondRow {
                         eccentricity,
+                        periapsis_distance,
                         inclination,
                         longitude_of_ascending_node,
                         argument_of_perifocus,
+                        time_of_periapsis,
                     } => {
                         let line = take_expecting(line, " N =").unwrap();
-                        let (_mean_motion, line) = take_or_empty(line, 22);
+                        let (mean_motion, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " MA=").unwrap();
                         let (mean_anomaly, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " TA=").unwrap();
-                        let (_true_anomaly, _) = take_or_empty(line, 22);
+                        let (true_anomaly, _) = take_or_empty(line, 22);
 
-                        self.state = EphemerisOrbitalElementsParserState::AddedMeanAnomaly {
+                        self.state = EphemerisOrbitalElementsParserState::ThirdRow {
                             eccentricity,
+                            periapsis_distance,
                             inclination,
                             longitude_of_ascending_node,
                             argument_of_perifocus,
+                            time_of_periapsis,
+                            mean_motion: mean_motion.trim().parse::<f32>().unwrap(),
                             mean_anomaly: mean_anomaly.trim().parse::<f32>().unwrap(),
+                            true_anomaly: true_anomaly.trim().parse::<f32>().unwrap(),
                         };
                     }
                     // Parses last line and return Item
-                    EphemerisOrbitalElementsParserState::AddedMeanAnomaly {
+                    EphemerisOrbitalElementsParserState::ThirdRow {
                         eccentricity,
+                        periapsis_distance,
                         inclination,
                         longitude_of_ascending_node,
                         argument_of_perifocus,
+                        time_of_periapsis,
+                        mean_motion,
                         mean_anomaly,
+                        true_anomaly,
                     } => {
                         let line = take_expecting(line, " A =").unwrap();
                         let (semi_major_axis, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " AD=").unwrap();
-                        let (_apoapsis_distance, line) = take_or_empty(line, 22);
+                        let (apoapsis_distance, line) = take_or_empty(line, 22);
 
                         let line = take_expecting(line, " PR=").unwrap();
-                        let (_siderral_orbit_period, _) = take_or_empty(line, 22);
+                        let (siderral_orbit_period, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisOrbitalElementsParserState::WaitingForDate;
                         return Some(EphemerisOrbitalElementsItem {
                             eccentricity,
+                            periapsis_distance,
                             inclination,
                             longitude_of_ascending_node,
                             argument_of_perifocus,
+                            time_of_periapsis,
+                            mean_motion,
                             mean_anomaly,
+                            true_anomaly,
                             semi_major_axis: semi_major_axis.trim().parse::<f32>().unwrap(),
+                            apoapsis_distance: apoapsis_distance.trim().parse::<f32>().unwrap(),
+                            siderral_orbit_period: siderral_orbit_period
+                                .trim()
+                                .parse::<f32>()
+                                .unwrap(),
                         });
                     }
                     EphemerisOrbitalElementsParserState::End => {
@@ -329,11 +361,20 @@ mod tests {
         assert_eq!(
             EphemerisOrbitalElementsItem {
                 eccentricity: 1.711794334680415E-02,
+                periapsis_distance: 1.469885520304013E+08,
                 inclination: 3.134746902320420E-03,
+
                 longitude_of_ascending_node: 1.633896137466430E+02,
                 argument_of_perifocus: 3.006492364709574E+02,
+                time_of_periapsis: 2459584.392523936927,
+
+                mean_motion: 1.141316101270797E-05,
                 mean_anomaly: 1.635515780663357E+02,
+                true_anomaly: 1.640958153023696E+02,
+
                 semi_major_axis: 1.495485150384278E+08,
+                apoapsis_distance: 1.521084780464543E+08,
+                siderral_orbit_period: 3.154253230977451E+07,
             },
             ephem[0]
         );
