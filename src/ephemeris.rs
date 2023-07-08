@@ -34,7 +34,7 @@ pub struct EphemerisOrbitalElementsItem {
     /// See <https://en.wikipedia.org/wiki/Eccentricity_(orbit)>
     pub eccentricity: f32,
     /// Distance from the center to the nearest point of the orbit in kilometer (km)
-    /// 
+    ///
     /// See <https://en.wikipedia.org/wiki/Apsis>
     pub periapsis_distance: f32,
     /// Tilt of the orbit
@@ -44,45 +44,45 @@ pub struct EphemerisOrbitalElementsItem {
     pub inclination: f32,
 
     /// The point, were the orbit crosses the reference plane (X-Y plane) from south to north
-    /// 
+    ///
     /// The unit of this value is in degrees.  
     /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
     pub longitude_of_ascending_node: f32,
     /// Angle in degrees of the periapsis to the ascending node, in the direction of motion.
-    /// 
+    ///
     /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
     pub argument_of_perifocus: f32,
     /// The timestamp (Julian Day Number) at which the body reaches the periapsis of the orbit
-    /// 
+    ///
     /// <https://en.wikipedia.org/wiki/Apsis#Time_of_perihelion>
     pub time_of_periapsis: f32,
 
     /// The angular speed (degrees/sec) of a body to complete one orbit
-    /// 
+    ///
     /// Assumes constant speed in a circular orbit.  
     /// <https://en.wikipedia.org/wiki/Mean_motion>
     pub mean_motion: f32,
     /// Orbital distance from the periapsis to the moving body.
-    /// 
+    ///
     /// The angle in degrees is in reference to a circular orbit.  
     /// <https://en.wikipedia.org/wiki/Mean_anomaly>
     pub mean_anomaly: f32,
     /// Angle in degrees between the moving body and the periapsis of the orbit.
-    /// 
+    ///
     /// The angle is defined in relation to the main focus point.  
     /// <https://en.wikipedia.org/wiki/True_anomaly>
     pub true_anomaly: f32,
 
     /// The sum of the periapsis and apoapsis distances divided by two in kilometer (km)
-    /// 
+    ///
     /// <https://en.wikipedia.org/wiki/Semimajor_axis>
     pub semi_major_axis: f32,
     /// Distance from the center to the farthest point of the orbit in kilometer (km)
-    /// 
+    ///
     /// <https://en.wikipedia.org/wiki/Apsis>
     pub apoapsis_distance: f32,
     /// Time to complete on orbit in seconds
-    /// 
+    ///
     /// Sidereal refers to the default period of an orbit.  
     /// <https://en.wikipedia.org/wiki/Orbital_period>
     pub siderral_orbit_period: f32,
