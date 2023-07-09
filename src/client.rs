@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    ephemeris::{EphemerisItem, EphemerisParser},
+    ephemeris::{
+        EphemerisOrbitalElementsItem, EphemerisOrbitalElementsParser, EphemerisVectorItem,
+        EphemerisVectorParser,
+    },
     major_bodies::MajorBody,
 };
 
@@ -69,13 +72,13 @@ pub async fn major_bodies() -> Vec<MajorBody> {
         .collect()
 }
 
-/// Get ephemeris (position and velocity) of a major body. Coordinates are
+/// Get vector ephemeris (position and velocity) of a major body. Coordinates are
 /// relative to the Sun's center.
-pub async fn ephemeris(
+pub async fn ephemeris_vector(
     id: i32,
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
-) -> Vec<EphemerisItem> {
+) -> Vec<EphemerisVectorItem> {
     let result = query_with_retries(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
@@ -95,5 +98,33 @@ pub async fn ephemeris(
     ])
     .await;
 
-    EphemerisParser::parse(result.iter().map(String::as_str)).collect()
+    EphemerisVectorParser::parse(result.iter().map(String::as_str)).collect()
+}
+/// Get orbital element ephemeris (e.g. eccentricity, semi-major axis, ...) of a
+/// major body relative to the Sun's center
+pub async fn ephemeris_orbital_elements(
+    id: i32,
+    start_time: DateTime<Utc>,
+    stop_time: DateTime<Utc>,
+) -> Vec<EphemerisOrbitalElementsItem> {
+    let result = query_with_retries(&[
+        ("COMMAND", id.to_string().as_str()),
+        // Select Sun as a observer. Note that Solar System Barycenter is in a
+        // slightly different place.
+        // https://astronomy.stackexchange.com/questions/44851/
+        ("CENTER", "500@10"),
+        ("EPHEM_TYPE", "ELEMENTS"),
+        // https://ssd.jpl.nasa.gov/horizons/manual.html#time
+        (
+            "START_TIME",
+            start_time.format("%Y-%b-%d-%T").to_string().as_str(),
+        ),
+        (
+            "STOP_TIME",
+            stop_time.format("%Y-%b-%d-%T").to_string().as_str(),
+        ),
+    ])
+    .await;
+
+    EphemerisOrbitalElementsParser::parse(result.iter().map(String::as_str)).collect()
 }
