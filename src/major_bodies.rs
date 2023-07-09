@@ -8,7 +8,8 @@ use thiserror::Error;
 /// <https://ssd.jpl.nasa.gov/horizons/manual.html#defs>
 ///
 /// Example
-/// ```ignore
+/// ```
+/// # use rhorizons::MajorBody;
 /// let mb = MajorBody {
 ///     id: 399,
 ///     name: "Earth".to_string()
