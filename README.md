@@ -1,10 +1,9 @@
-[![crates.io](https://img.shields.io/crates/v/walkers.svg)](https://crates.io/crates/walkers)
+[![crates.io](https://img.shields.io/crates/v/rhorizons.svg)](https://crates.io/crates/rhorizons)
 
 Access NASA JPL Horizons system from Rust. This crate is written in asynchronous
 code, therefore you probably want to use it in conjunction with `tokio`.
 
-
-## Examples
+## Example
 
 ```rust
 #[tokio::main]
