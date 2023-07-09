@@ -1,9 +1,28 @@
 use crate::utilities::{take_expecting, take_or_empty};
 
 /// Position (in km) and velocity (in km/s) of a body.
+///
+/// | Horizons Symbol | Meaning                                         | Unit                  |
+/// |-----------------|-------------------------------------------------|-----------------------|
+/// | X               | X-component of position vector                  | km                    |
+/// | Y               | Y-component of position vector                  | km                    |
+/// | Z               | Z-component of position vector                  | km                    |
+/// | VX              | X-component of velocity vector                  | km/sec                |
+/// | VY              | Y-component of velocity vector                  | km/sec                |
+/// | VZ              | Z-component of velocity vector                  | km/sec                |
+/// | LT              | One-way down-leg Newtonian light-time           | sec                   |
+/// | RG              | Range; distance from coordinate center          | km                    |
+/// | RR              | Range-rate; radial velocity wrt coord. center   | km/sec                |
 #[derive(Debug, PartialEq)]
 pub struct EphemerisVectorItem {
+    /// Position int km of the moving body relative to the Sun
+    ///
+    /// [x, y, z]
     pub position: [f32; 3],
+  
+    /// Velocity in km/s of the moving body relative to the Sun
+    ///
+    /// [v_x, v_y, v_z]
     pub velocity: [f32; 3],
 }
 
