@@ -19,7 +19,7 @@ pub struct EphemerisVectorItem {
     ///
     /// [x, y, z]
     pub position: [f32; 3],
-  
+
     /// Velocity in km/s of the moving body relative to the Sun
     ///
     /// [v_x, v_y, v_z]
