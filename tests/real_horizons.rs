@@ -27,8 +27,8 @@ async fn getting_earths_ephemeris() {
     //  LT= 4.974865749957088E+02 RG= 1.491427231399648E+08 RR=-4.926267109444211E-01
     let vectors = ephemeris(
         399,
-        Utc.ymd(2016, 10, 15).and_hms(12, 0, 0),
-        Utc.ymd(2016, 10, 15).and_hms(13, 0, 0),
+        Utc.with_ymd_and_hms(2016, 10, 15, 12, 0, 0).unwrap(),
+        Utc.with_ymd_and_hms(2016, 10, 15, 13, 0, 0).unwrap(),
     )
     .await;
 
@@ -47,8 +47,8 @@ async fn getting_jupiter_ephemeris() {
     //  LT= 2.720942202383012E+03 RG= 8.157179509283365E+08 RR= 1.048282114626244E-01
     let vectors = ephemeris(
         599,
-        Utc.ymd(2016, 10, 15).and_hms(12, 0, 0),
-        Utc.ymd(2016, 10, 15).and_hms(13, 0, 0),
+        Utc.with_ymd_and_hms(2016, 10, 15, 12, 0, 0).unwrap(),
+        Utc.with_ymd_and_hms(2016, 10, 15, 13, 0, 0).unwrap(),
     )
     .await;
 
