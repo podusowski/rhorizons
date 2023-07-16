@@ -215,17 +215,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         if line == "$$EOE" {
                             self.state = EphemerisVectorParserState::End;
                         } else {
-                            let line: &str =
-                                line.split_terminator('=').collect::<Vec<_>>()[1].trim();
-
-                            let line = take_expecting(line, "A.D. ").unwrap();
-
-                            let line = line.trim_end_matches("TDB").trim();
-                            let line = line.trim_end_matches(".0000"); //Somehow the formatter doesnt like %.4f
-
-                            let time = NaiveDateTime::parse_from_str(line, "%Y-%b-%d %H:%M:%S")
-                                .unwrap()
-                                .and_utc();
+                            let time = parse_date_time(line);
 
                             self.state = EphemerisVectorParserState::Date(time);
                         }
@@ -313,17 +303,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         if line == "$$EOE" {
                             self.state = EphemerisOrbitalElementsParserState::End;
                         } else {
-                            let line: &str =
-                                line.split_terminator('=').collect::<Vec<_>>()[1].trim();
-
-                            let line = take_expecting(line, "A.D. ").unwrap();
-
-                            let line = line.trim_end_matches("TDB").trim();
-                            let line = line.trim_end_matches(".0000"); //Somehow the formatter doesnt like %.4f
-
-                            let time = NaiveDateTime::parse_from_str(line, "%Y-%b-%d %H:%M:%S")
-                                .unwrap()
-                                .and_utc();
+                            let time = parse_date_time(line);
 
                             self.state = EphemerisOrbitalElementsParserState::Date(time);
                         }
@@ -478,6 +458,20 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
     }
 }
 
+fn parse_date_time(line: &str) -> DateTime<Utc> {
+    let date_time_str: &str = line.split_terminator('=').collect::<Vec<_>>()[1].trim();
+
+    let date_time_str = take_expecting(date_time_str, "A.D. ").unwrap();
+
+    //let line = line.trim_end_matches("TDB").trim();
+    //let line = line.trim_end_matches(".0000");
+    let (time, _) = take_or_empty(date_time_str, 20); //Somehow the formatter does not like %.4f
+
+    NaiveDateTime::parse_from_str(time, "%Y-%b-%d %H:%M:%S")
+        .unwrap()
+        .and_utc()
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::TimeZone;
@@ -537,5 +531,28 @@ mod tests {
             },
             ephem[0]
         );
+    }
+
+    #[test]
+    fn test_parsing_date_time() {
+        let lines: [&str; 4] = [
+            "2459750.250000000 = A.D. 2022-Jun-19 18:00:00.0000 TDB ", // orbital_elements.txt
+            "2459750.375000000 = A.D. 2022-Jun-19 21:00:00.0000 TDB ",
+            "2459805.372175926 = A.D. 2022-Aug-13 20:55:56.0000 TDB ", // vector.txt
+            "2459805.455509259 = A.D. 2022-Aug-13 22:55:56.0000 TDB ",
+        ];
+
+        let expected: [DateTime<Utc>; 4] = [
+            Utc.with_ymd_and_hms(2022, 6, 19, 18, 0, 0).unwrap(),
+            Utc.with_ymd_and_hms(2022, 6, 19, 21, 0, 0).unwrap(),
+            Utc.with_ymd_and_hms(2022, 8, 13, 20, 55, 56).unwrap(),
+            Utc.with_ymd_and_hms(2022, 8, 13, 22, 55, 56).unwrap(),
+        ];
+
+        for (i, line) in lines.into_iter().enumerate() {
+            let time = parse_date_time(line);
+
+            assert_eq!(time, expected[i]);
+        }
     }
 }
