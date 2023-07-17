@@ -1,3 +1,5 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
+
 use crate::utilities::{take_expecting, take_or_empty};
 
 /// Position (in km) and velocity (in km/s) of a body.
@@ -15,6 +17,9 @@ use crate::utilities::{take_expecting, take_or_empty};
 /// | RR              | Range-rate; radial velocity wrt coord. center   | km/sec                |
 #[derive(Debug, PartialEq)]
 pub struct EphemerisVectorItem {
+    /// Timestamp of the entry in UTC
+    pub time: DateTime<Utc>,
+
     /// Position int km of the moving body relative to the Sun
     ///
     /// [x, y, z]
@@ -46,6 +51,9 @@ pub struct EphemerisVectorItem {
 /// For a detailed explenation of keplarian orbital elements, visit [Wikipedia](https://en.wikipedia.org/wiki/Orbital_elements)
 #[derive(Debug, PartialEq)]
 pub struct EphemerisOrbitalElementsItem {
+    /// Timestamp of the entry in UTC
+    pub time: DateTime<Utc>,
+
     /// Describes the "roundness" of the orbit.
     ///
     /// Value of 0 means a circle, everything until 1 is an eliptic orbit.  
@@ -110,11 +118,13 @@ pub struct EphemerisOrbitalElementsItem {
 enum EphemerisVectorParserState {
     WaitingForSoe,
     WaitingForDate,
-    WaitingForPosition,
+    Date(DateTime<Utc>),
     Position {
+        time: DateTime<Utc>,
         position: [f32; 3],
     },
     Complete {
+        time: DateTime<Utc>,
         position: [f32; 3],
         velocity: [f32; 3],
     },
@@ -124,13 +134,17 @@ enum EphemerisVectorParserState {
 enum EphemerisOrbitalElementsParserState {
     WaitingForSoe,
     WaitingForDate,
-    WaitingForFirstRow,
+    Date(DateTime<Utc>),
     FirstRow {
+        time: DateTime<Utc>,
+
         eccentricity: f32,
         periapsis_distance: f32,
         inclination: f32,
     },
     SecondRow {
+        time: DateTime<Utc>,
+
         eccentricity: f32,
         periapsis_distance: f32,
         inclination: f32,
@@ -140,6 +154,8 @@ enum EphemerisOrbitalElementsParserState {
         time_of_periapsis: f32,
     },
     ThirdRow {
+        time: DateTime<Utc>,
+
         eccentricity: f32,
         periapsis_distance: f32,
         inclination: f32,
@@ -199,10 +215,12 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         if line == "$$EOE" {
                             self.state = EphemerisVectorParserState::End;
                         } else {
-                            self.state = EphemerisVectorParserState::WaitingForPosition;
+                            let time = parse_date_time(line);
+
+                            self.state = EphemerisVectorParserState::Date(time);
                         }
                     }
-                    EphemerisVectorParserState::WaitingForPosition => {
+                    EphemerisVectorParserState::Date(time) => {
                         // TODO: Don't panic.
                         let line = take_expecting(line, " X =").unwrap();
                         let (x, line) = take_or_empty(line, 22);
@@ -214,6 +232,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         let (z, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisVectorParserState::Position {
+                            time,
                             position: [
                                 x.trim().parse::<f32>().unwrap(),
                                 y.trim().parse::<f32>().unwrap(),
@@ -221,7 +240,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                             ],
                         };
                     }
-                    EphemerisVectorParserState::Position { position } => {
+                    EphemerisVectorParserState::Position { time, position } => {
                         // TODO: Don't panic.
                         let line = take_expecting(line, " VX=").unwrap();
                         let (vx, line) = take_or_empty(line, 22);
@@ -233,6 +252,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         let (vz, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisVectorParserState::Complete {
+                            time,
                             position,
                             velocity: [
                                 vx.trim().parse::<f32>().unwrap(),
@@ -242,9 +262,17 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         };
                     }
                     // Would parse third line and then return Item => ignores third line and returns directly
-                    EphemerisVectorParserState::Complete { position, velocity } => {
+                    EphemerisVectorParserState::Complete {
+                        time,
+                        position,
+                        velocity,
+                    } => {
                         self.state = EphemerisVectorParserState::WaitingForDate;
-                        return Some(EphemerisVectorItem { position, velocity });
+                        return Some(EphemerisVectorItem {
+                            time,
+                            position,
+                            velocity,
+                        });
                     }
                     EphemerisVectorParserState::End => {
                         // Should we drain input iterator?
@@ -275,10 +303,12 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         if line == "$$EOE" {
                             self.state = EphemerisOrbitalElementsParserState::End;
                         } else {
-                            self.state = EphemerisOrbitalElementsParserState::WaitingForFirstRow;
+                            let time = parse_date_time(line);
+
+                            self.state = EphemerisOrbitalElementsParserState::Date(time);
                         }
                     }
-                    EphemerisOrbitalElementsParserState::WaitingForFirstRow => {
+                    EphemerisOrbitalElementsParserState::Date(time) => {
                         let line = take_expecting(line, " EC=").unwrap();
                         let (eccentricity, line) = take_or_empty(line, 22);
 
@@ -289,12 +319,16 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         let (inclination, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisOrbitalElementsParserState::FirstRow {
+                            time,
+
                             eccentricity: eccentricity.trim().parse::<f32>().unwrap(),
                             periapsis_distance: periapsis_distance.trim().parse::<f32>().unwrap(),
                             inclination: inclination.trim().parse::<f32>().unwrap(),
                         };
                     }
                     EphemerisOrbitalElementsParserState::FirstRow {
+                        time,
+
                         eccentricity,
                         periapsis_distance,
                         inclination,
@@ -309,9 +343,12 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         let (time_of_periapsis, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisOrbitalElementsParserState::SecondRow {
+                            time,
+
                             eccentricity,
                             periapsis_distance,
                             inclination,
+
                             longitude_of_ascending_node: longitude_of_ascending_node
                                 .trim()
                                 .parse::<f32>()
@@ -324,9 +361,12 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         };
                     }
                     EphemerisOrbitalElementsParserState::SecondRow {
+                        time,
+
                         eccentricity,
                         periapsis_distance,
                         inclination,
+
                         longitude_of_ascending_node,
                         argument_of_perifocus,
                         time_of_periapsis,
@@ -341,12 +381,16 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                         let (true_anomaly, _) = take_or_empty(line, 22);
 
                         self.state = EphemerisOrbitalElementsParserState::ThirdRow {
+                            time,
+
                             eccentricity,
                             periapsis_distance,
                             inclination,
+
                             longitude_of_ascending_node,
                             argument_of_perifocus,
                             time_of_periapsis,
+
                             mean_motion: mean_motion.trim().parse::<f32>().unwrap(),
                             mean_anomaly: mean_anomaly.trim().parse::<f32>().unwrap(),
                             true_anomaly: true_anomaly.trim().parse::<f32>().unwrap(),
@@ -354,12 +398,16 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
                     }
                     // Parses last line and return Item
                     EphemerisOrbitalElementsParserState::ThirdRow {
+                        time,
+
                         eccentricity,
                         periapsis_distance,
                         inclination,
+
                         longitude_of_ascending_node,
                         argument_of_perifocus,
                         time_of_periapsis,
+
                         mean_motion,
                         mean_anomaly,
                         true_anomaly,
@@ -375,15 +423,20 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
 
                         self.state = EphemerisOrbitalElementsParserState::WaitingForDate;
                         return Some(EphemerisOrbitalElementsItem {
+                            time,
+
                             eccentricity,
                             periapsis_distance,
                             inclination,
+
                             longitude_of_ascending_node,
                             argument_of_perifocus,
                             time_of_periapsis,
+
                             mean_motion,
                             mean_anomaly,
                             true_anomaly,
+
                             semi_major_axis: semi_major_axis.trim().parse::<f32>().unwrap(),
                             apoapsis_distance: apoapsis_distance.trim().parse::<f32>().unwrap(),
                             siderral_orbit_period: siderral_orbit_period
@@ -405,8 +458,24 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
     }
 }
 
+fn parse_date_time(line: &str) -> DateTime<Utc> {
+    let date_time_str: &str = line.split_terminator('=').collect::<Vec<_>>()[1].trim();
+
+    let date_time_str = take_expecting(date_time_str, "A.D. ").unwrap();
+
+    //let line = line.trim_end_matches("TDB").trim();
+    //let line = line.trim_end_matches(".0000");
+    let (time, _) = take_or_empty(date_time_str, 20); //Somehow the formatter does not like %.4f
+
+    NaiveDateTime::parse_from_str(time, "%Y-%b-%d %H:%M:%S")
+        .unwrap()
+        .and_utc()
+}
+
 #[cfg(test)]
 mod tests {
+    use chrono::TimeZone;
+
     use super::*;
 
     #[test]
@@ -417,6 +486,7 @@ mod tests {
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
             EphemerisVectorItem {
+                time: Utc.with_ymd_and_hms(2022, 8, 13, 19, 55, 56).unwrap(), // A.D. 2022-Aug-13 19:55:56.0000 TDB
                 position: [
                     1.870010427985840E+02,
                     2.484687803242536E+03,
@@ -441,6 +511,8 @@ mod tests {
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
             EphemerisOrbitalElementsItem {
+                time: Utc.with_ymd_and_hms(2022, 6, 19, 18, 0, 0).unwrap(), // A.D. 2022-Jun-19 18:00:00.0000 TDB
+
                 eccentricity: 1.711794334680415E-02,
                 periapsis_distance: 1.469885520304013E+08,
                 inclination: 3.134746902320420E-03,
@@ -459,5 +531,28 @@ mod tests {
             },
             ephem[0]
         );
+    }
+
+    #[test]
+    fn test_parsing_date_time() {
+        let lines: [&str; 4] = [
+            "2459750.250000000 = A.D. 2022-Jun-19 18:00:00.0000 TDB ", // orbital_elements.txt
+            "2459750.375000000 = A.D. 2022-Jun-19 21:00:00.0000 TDB ",
+            "2459805.372175926 = A.D. 2022-Aug-13 20:55:56.0000 TDB ", // vector.txt
+            "2459805.455509259 = A.D. 2022-Aug-13 22:55:56.0000 TDB ",
+        ];
+
+        let expected: [DateTime<Utc>; 4] = [
+            Utc.with_ymd_and_hms(2022, 6, 19, 18, 0, 0).unwrap(),
+            Utc.with_ymd_and_hms(2022, 6, 19, 21, 0, 0).unwrap(),
+            Utc.with_ymd_and_hms(2022, 8, 13, 20, 55, 56).unwrap(),
+            Utc.with_ymd_and_hms(2022, 8, 13, 22, 55, 56).unwrap(),
+        ];
+
+        for (i, line) in lines.into_iter().enumerate() {
+            let time = parse_date_time(line);
+
+            assert_eq!(time, expected[i]);
+        }
     }
 }
