@@ -8,7 +8,7 @@ mod utilities;
 
 #[cfg(feature = "si")]
 /// Ephemeris information based on SI-units.
-/// 
+///
 /// SI-units from the crate *uom*: <https://docs.rs/uom/0.35.0/uom/>
 pub mod si;
 

@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::si::ephemeris::{
-        EphemerisOrbitalElementsItem, EphemerisOrbitalElementsParser, EphemerisVectorItem,
-        EphemerisVectorParser,
-    };
+    EphemerisOrbitalElementsItem, EphemerisOrbitalElementsParser, EphemerisVectorItem,
+    EphemerisVectorParser,
+};
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
 /// some statuses and `result` field which is just human-readable string
