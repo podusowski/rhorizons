@@ -215,15 +215,11 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         let line = take_expecting(line, " Z =").unwrap();
                         let (z, _) = take_or_empty(line, 22);
 
-                        let x_km = x.trim().parse::<f32>().unwrap();
-                        let y_km = y.trim().parse::<f32>().unwrap();
-                        let z_km = z.trim().parse::<f32>().unwrap();
-
                         self.state = EphemerisVectorParserState::Position {
                             position: [
-                                Length::new::<length::kilometer>(x_km),
-                                Length::new::<length::kilometer>(y_km),
-                                Length::new::<length::kilometer>(z_km),
+                                Length::new::<length::kilometer>(x.trim().parse::<f32>().unwrap()),
+                                Length::new::<length::kilometer>(y.trim().parse::<f32>().unwrap()),
+                                Length::new::<length::kilometer>(z.trim().parse::<f32>().unwrap()),
                             ],
                         };
                     }
@@ -238,16 +234,12 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
                         let line = take_expecting(line, " VZ=").unwrap();
                         let (vz, _) = take_or_empty(line, 22);
 
-                        let vx_kms = vx.trim().parse::<f32>().unwrap();
-                        let vy_kms = vy.trim().parse::<f32>().unwrap();
-                        let vz_kms = vz.trim().parse::<f32>().unwrap();
-
                         self.state = EphemerisVectorParserState::Complete {
                             position,
                             velocity: [
-                                Velocity::new::<velocity::kilometer_per_second>(vx_kms),
-                                Velocity::new::<velocity::kilometer_per_second>(vy_kms),
-                                Velocity::new::<velocity::kilometer_per_second>(vz_kms),
+                                Velocity::new::<velocity::kilometer_per_second>(vx.trim().parse::<f32>().unwrap()),
+                                Velocity::new::<velocity::kilometer_per_second>(vy.trim().parse::<f32>().unwrap()),
+                                Velocity::new::<velocity::kilometer_per_second>(vz.trim().parse::<f32>().unwrap()),
                             ],
                         };
                     }

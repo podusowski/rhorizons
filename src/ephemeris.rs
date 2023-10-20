@@ -15,7 +15,7 @@ use crate::utilities::{take_expecting, take_or_empty};
 /// | RR              | Range-rate; radial velocity wrt coord. center   | km/sec                |
 #[derive(Debug, PartialEq)]
 pub struct EphemerisVectorItem {
-    /// Position int km of the moving body relative to the Sun
+    /// Position in km of the moving body relative to the Sun
     ///
     /// [x, y, z]
     pub position: [f32; 3],
