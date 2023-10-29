@@ -2,10 +2,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::si::ephemeris::{
-    EphemerisOrbitalElementsItem, EphemerisOrbitalElementsParser, EphemerisVectorItem,
-    EphemerisVectorParser,
-};
+use crate::si::ephemeris::{EphemerisOrbitalElementsItem, EphemerisVectorItem};
+
+use crate::ephemeris::{EphemerisOrbitalElementsParser, EphemerisVectorParser};
 
 /// Generic Horizons response. Their API just gives some JSON with two field,
 /// some statuses and `result` field which is just human-readable string
@@ -86,7 +85,9 @@ pub async fn ephemeris_vector(
     ])
     .await;
 
-    EphemerisVectorParser::parse(result.iter().map(String::as_str)).collect()
+    EphemerisVectorParser::parse(result.iter().map(String::as_str))
+        .map(|e| EphemerisVectorItem::from(e))
+        .collect()
 }
 /// Get orbital element ephemeris (e.g. eccentricity, semi-major axis, ...) of a
 /// major body relative to the Sun's center
@@ -114,5 +115,7 @@ pub async fn ephemeris_orbital_elements(
     ])
     .await;
 
-    EphemerisOrbitalElementsParser::parse(result.iter().map(String::as_str)).collect()
+    EphemerisOrbitalElementsParser::parse(result.iter().map(String::as_str))
+        .map(|e| EphemerisOrbitalElementsItem::from(e))
+        .collect()
 }

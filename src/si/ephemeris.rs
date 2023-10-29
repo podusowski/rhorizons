@@ -1,8 +1,6 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use uom::si::f32::{Angle, AngularVelocity, Length, Time, Velocity};
 use uom::si::{angle, angular_velocity, length, time, velocity};
-
-use crate::utilities::{take_expecting, take_or_empty};
 
 /// Position and velocity of a body. Units are SI-based
 ///
@@ -116,74 +114,63 @@ pub struct EphemerisOrbitalElementsItem {
     pub siderral_orbit_period: Time,
 }
 
-enum EphemerisVectorParserState {
-    WaitingForSoe,
-    WaitingForDate,
-    Date(DateTime<Utc>),
-    Position {
-        time: DateTime<Utc>,
-        position: [Length; 3],
-    },
-    Complete {
-        time: DateTime<Utc>,
-        position: [Length; 3],
-        velocity: [Velocity; 3],
-    },
-    End,
+impl From<crate::EphemerisVectorItem> for EphemerisVectorItem {
+    fn from(item: crate::EphemerisVectorItem) -> Self {
+        let position: Vec<Length> = item
+            .position
+            .into_iter()
+            .map(|p| Length::new::<length::kilometer>(p))
+            .collect();
+        let velocity: Vec<Velocity> = item
+            .velocity
+            .into_iter()
+            .map(|p| Velocity::new::<velocity::kilometer_per_second>(p))
+            .collect();
+
+        EphemerisVectorItem {
+            time: item.time,
+            position: position.try_into().unwrap(),
+            velocity: velocity.try_into().unwrap(),
+        }
+    }
 }
 
-enum EphemerisOrbitalElementsParserState {
-    WaitingForSoe,
-    WaitingForDate,
-    Date(DateTime<Utc>),
-    FirstRow {
-        time: DateTime<Utc>,
-        eccentricity: f32,
-        periapsis_distance: Length,
-        inclination: Angle,
-    },
-    SecondRow {
-        time: DateTime<Utc>,
-        eccentricity: f32,
-        periapsis_distance: Length,
-        inclination: Angle,
-
-        longitude_of_ascending_node: Angle,
-        argument_of_perifocus: Angle,
-        time_of_periapsis: Time,
-    },
-    ThirdRow {
-        time: DateTime<Utc>,
-        eccentricity: f32,
-        periapsis_distance: Length,
-        inclination: Angle,
-
-        longitude_of_ascending_node: Angle,
-        argument_of_perifocus: Angle,
-        time_of_periapsis: Time,
-
-        mean_motion: AngularVelocity,
-        mean_anomaly: Angle,
-        true_anomaly: Angle,
-    },
-    End,
+impl From<crate::EphemerisOrbitalElementsItem> for EphemerisOrbitalElementsItem {
+    fn from(item: crate::EphemerisOrbitalElementsItem) -> Self {
+        EphemerisOrbitalElementsItem {
+            time: item.time,
+            eccentricity: item.eccentricity,
+            periapsis_distance: Length::new::<length::kilometer>(item.periapsis_distance),
+            inclination: Angle::new::<angle::degree>(item.inclination),
+            longitude_of_ascending_node: Angle::new::<angle::degree>(
+                item.longitude_of_ascending_node,
+            ),
+            argument_of_perifocus: Angle::new::<angle::degree>(item.argument_of_perifocus),
+            time_of_periapsis: Time::new::<time::day>(item.time_of_periapsis),
+            mean_motion: AngularVelocity::new::<angular_velocity::degree_per_second>(
+                item.mean_motion,
+            ),
+            mean_anomaly: Angle::new::<angle::degree>(item.mean_anomaly),
+            true_anomaly: Angle::new::<angle::degree>(item.true_anomaly),
+            semi_major_axis: Length::new::<length::kilometer>(item.semi_major_axis),
+            apoapsis_distance: Length::new::<length::kilometer>(item.apoapsis_distance),
+            siderral_orbit_period: Time::new::<time::second>(item.siderral_orbit_period),
+        }
+    }
 }
-
+/*
 pub struct EphemerisVectorParser<'a, Input: Iterator<Item = &'a str>> {
-    state: EphemerisVectorParserState,
-    input: Input,
+    parser: crate::ephemeris::EphemerisVectorParser<'a, Input>,
 }
 
 pub struct EphemerisOrbitalElementsParser<'a, Input: Iterator<Item = &'a str>> {
-    state: EphemerisOrbitalElementsParserState,
-    input: Input,
+    parser: crate::ephemeris::EphemerisOrbitalElementsParser<'a, Input>,
 }
 
 impl<'a, Input: Iterator<Item = &'a str>> EphemerisVectorParser<'a, Input> {
     pub fn parse(input: Input) -> Self {
         Self {
-            state: EphemerisVectorParserState::WaitingForSoe,
-            input,
+            parser: crate::ephemeris::EphemerisVectorParser::parse(input),
         }
     }
 }
@@ -191,8 +178,7 @@ impl<'a, Input: Iterator<Item = &'a str>> EphemerisVectorParser<'a, Input> {
 impl<'a, Input: Iterator<Item = &'a str>> EphemerisOrbitalElementsParser<'a, Input> {
     pub fn parse(input: Input) -> Self {
         Self {
-            state: EphemerisOrbitalElementsParserState::WaitingForSoe,
-            input,
+            parser: crate::ephemeris::EphemerisOrbitalElementsParser::parse(input),
         }
     }
 }
@@ -201,93 +187,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
     type Item = EphemerisVectorItem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(line) = self.input.next() {
-                match self.state {
-                    EphemerisVectorParserState::WaitingForSoe => {
-                        if line == "$$SOE" {
-                            self.state = EphemerisVectorParserState::WaitingForDate;
-                        }
-                    }
-                    EphemerisVectorParserState::WaitingForDate => {
-                        if line == "$$EOE" {
-                            self.state = EphemerisVectorParserState::End;
-                        } else {
-                            let time = parse_date_time(line);
-
-                            self.state = EphemerisVectorParserState::Date(time);
-                        }
-                    }
-                    EphemerisVectorParserState::Date(time) => {
-                        // TODO: Don't panic.
-                        let line = take_expecting(line, " X =").unwrap();
-                        let (x, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " Y =").unwrap();
-                        let (y, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " Z =").unwrap();
-                        let (z, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisVectorParserState::Position {
-                            time,
-                            position: [
-                                Length::new::<length::kilometer>(x.trim().parse::<f32>().unwrap()),
-                                Length::new::<length::kilometer>(y.trim().parse::<f32>().unwrap()),
-                                Length::new::<length::kilometer>(z.trim().parse::<f32>().unwrap()),
-                            ],
-                        };
-                    }
-                    EphemerisVectorParserState::Position { time, position } => {
-                        // TODO: Don't panic.
-                        let line = take_expecting(line, " VX=").unwrap();
-                        let (vx, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " VY=").unwrap();
-                        let (vy, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " VZ=").unwrap();
-                        let (vz, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisVectorParserState::Complete {
-                            time,
-                            position,
-                            velocity: [
-                                Velocity::new::<velocity::kilometer_per_second>(
-                                    vx.trim().parse::<f32>().unwrap(),
-                                ),
-                                Velocity::new::<velocity::kilometer_per_second>(
-                                    vy.trim().parse::<f32>().unwrap(),
-                                ),
-                                Velocity::new::<velocity::kilometer_per_second>(
-                                    vz.trim().parse::<f32>().unwrap(),
-                                ),
-                            ],
-                        };
-                    }
-                    // Would parse third line and then return Item => ignores third line and returns directly
-                    EphemerisVectorParserState::Complete {
-                        time,
-                        position,
-                        velocity,
-                    } => {
-                        self.state = EphemerisVectorParserState::WaitingForDate;
-                        return Some(EphemerisVectorItem {
-                            time,
-                            position,
-                            velocity,
-                        });
-                    }
-                    EphemerisVectorParserState::End => {
-                        // Should we drain input iterator?
-                        return None;
-                    }
-                }
-            } else {
-                // Input iterator is drained. Nothing to do.
-                return None;
-            }
-        }
+        self.parser.next().map(|v| Self::Item::from(v))
     }
 }
 
@@ -295,194 +195,23 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsP
     type Item = EphemerisOrbitalElementsItem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(line) = self.input.next() {
-                match self.state {
-                    EphemerisOrbitalElementsParserState::WaitingForSoe => {
-                        if line == "$$SOE" {
-                            self.state = EphemerisOrbitalElementsParserState::WaitingForDate;
-                        }
-                    }
-                    EphemerisOrbitalElementsParserState::WaitingForDate => {
-                        if line == "$$EOE" {
-                            self.state = EphemerisOrbitalElementsParserState::End;
-                        } else {
-                            let time = parse_date_time(line);
-
-                            self.state = EphemerisOrbitalElementsParserState::Date(time);
-                        }
-                    }
-                    EphemerisOrbitalElementsParserState::Date(time) => {
-                        let line = take_expecting(line, " EC=").unwrap();
-                        let (eccentricity, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " QR=").unwrap();
-                        let (periapsis_distance, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " IN=").unwrap();
-                        let (inclination, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisOrbitalElementsParserState::FirstRow {
-                            time,
-                            eccentricity: eccentricity.trim().parse::<f32>().unwrap(),
-                            periapsis_distance: Length::new::<length::kilometer>(
-                                periapsis_distance.trim().parse::<f32>().unwrap(),
-                            ),
-                            inclination: Angle::new::<angle::degree>(
-                                inclination.trim().parse::<f32>().unwrap(),
-                            ),
-                        };
-                    }
-                    EphemerisOrbitalElementsParserState::FirstRow {
-                        time,
-                        eccentricity,
-                        periapsis_distance,
-                        inclination,
-                    } => {
-                        let line = take_expecting(line, " OM=").unwrap();
-                        let (longitude_of_ascending_node, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " W =").unwrap();
-                        let (argument_of_perifocus, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " Tp=").unwrap();
-                        let (time_of_periapsis, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisOrbitalElementsParserState::SecondRow {
-                            time,
-                            eccentricity,
-                            periapsis_distance,
-                            inclination,
-                            longitude_of_ascending_node: Angle::new::<angle::degree>(
-                                longitude_of_ascending_node.trim().parse::<f32>().unwrap(),
-                            ),
-                            argument_of_perifocus: Angle::new::<angle::degree>(
-                                argument_of_perifocus.trim().parse::<f32>().unwrap(),
-                            ),
-                            time_of_periapsis: Time::new::<time::day>(
-                                time_of_periapsis.trim().parse::<f32>().unwrap(),
-                            ),
-                        };
-                    }
-                    EphemerisOrbitalElementsParserState::SecondRow {
-                        time,
-                        eccentricity,
-                        periapsis_distance,
-                        inclination,
-                        longitude_of_ascending_node,
-                        argument_of_perifocus,
-                        time_of_periapsis,
-                    } => {
-                        let line = take_expecting(line, " N =").unwrap();
-                        let (mean_motion, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " MA=").unwrap();
-                        let (mean_anomaly, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " TA=").unwrap();
-                        let (true_anomaly, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisOrbitalElementsParserState::ThirdRow {
-                            time,
-                            eccentricity,
-                            periapsis_distance,
-                            inclination,
-                            longitude_of_ascending_node,
-                            argument_of_perifocus,
-                            time_of_periapsis,
-                            mean_motion: AngularVelocity::new::<angular_velocity::degree_per_second>(
-                                mean_motion.trim().parse::<f32>().unwrap(),
-                            ),
-                            mean_anomaly: Angle::new::<angle::degree>(
-                                mean_anomaly.trim().parse::<f32>().unwrap(),
-                            ),
-                            true_anomaly: Angle::new::<angle::degree>(
-                                true_anomaly.trim().parse::<f32>().unwrap(),
-                            ),
-                        };
-                    }
-                    // Parses last line and return Item
-                    EphemerisOrbitalElementsParserState::ThirdRow {
-                        time,
-                        eccentricity,
-                        periapsis_distance,
-                        inclination,
-                        longitude_of_ascending_node,
-                        argument_of_perifocus,
-                        time_of_periapsis,
-                        mean_motion,
-                        mean_anomaly,
-                        true_anomaly,
-                    } => {
-                        let line = take_expecting(line, " A =").unwrap();
-                        let (semi_major_axis, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " AD=").unwrap();
-                        let (apoapsis_distance, line) = take_or_empty(line, 22);
-
-                        let line = take_expecting(line, " PR=").unwrap();
-                        let (siderral_orbit_period, _) = take_or_empty(line, 22);
-
-                        self.state = EphemerisOrbitalElementsParserState::WaitingForDate;
-                        return Some(EphemerisOrbitalElementsItem {
-                            time,
-                            eccentricity,
-                            periapsis_distance,
-                            inclination,
-                            longitude_of_ascending_node,
-                            argument_of_perifocus,
-                            time_of_periapsis,
-                            mean_motion,
-                            mean_anomaly,
-                            true_anomaly,
-                            semi_major_axis: Length::new::<length::kilometer>(
-                                semi_major_axis.trim().parse::<f32>().unwrap(),
-                            ),
-                            apoapsis_distance: Length::new::<length::kilometer>(
-                                apoapsis_distance.trim().parse::<f32>().unwrap(),
-                            ),
-                            siderral_orbit_period: Time::new::<time::second>(
-                                siderral_orbit_period.trim().parse::<f32>().unwrap(),
-                            ),
-                        });
-                    }
-                    EphemerisOrbitalElementsParserState::End => {
-                        // Should we drain input iterator?
-                        return None;
-                    }
-                }
-            } else {
-                // Input iterator is drained. Nothing to do.
-                return None;
-            }
-        }
+        self.parser.next().map(|v| Self::Item::from(v))
     }
 }
-
-fn parse_date_time(line: &str) -> DateTime<Utc> {
-    let date_time_str: &str = line.split_terminator('=').collect::<Vec<_>>()[1].trim();
-
-    let date_time_str = take_expecting(date_time_str, "A.D. ").unwrap();
-
-    //let line = line.trim_end_matches("TDB").trim();
-    //let line = line.trim_end_matches(".0000");
-    let (time, _) = take_or_empty(date_time_str, 20); //Somehow the formatter does not like %.4f
-
-    NaiveDateTime::parse_from_str(time, "%Y-%b-%d %H:%M:%S")
-        .unwrap()
-        .and_utc()
-}
-
+ */
 #[cfg(test)]
 mod tests {
     use chrono::TimeZone;
 
     use super::*;
+    use crate::ephemeris::{EphemerisOrbitalElementsParser, EphemerisVectorParser};
 
     #[test]
     fn test_parsing_ephemeris_vector() {
         let data = include_str!("../vector.txt");
-        let ephem: Vec<_> = EphemerisVectorParser::parse(data.lines()).collect();
+        let ephem: Vec<_> = EphemerisVectorParser::parse(data.lines())
+            .map(|e| EphemerisVectorItem::from(e))
+            .collect();
         assert_eq!(4, ephem.len());
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
@@ -507,7 +236,9 @@ mod tests {
     #[test]
     fn test_parsing_ephemeris_orbital_elements() {
         let data = include_str!("../orbital_elements.txt");
-        let ephem: Vec<_> = EphemerisOrbitalElementsParser::parse(data.lines()).collect();
+        let ephem: Vec<_> = EphemerisOrbitalElementsParser::parse(data.lines())
+            .map(|e| EphemerisOrbitalElementsItem::from(e))
+            .collect();
         assert_eq!(4, ephem.len());
         // TODO: This will probably fail intermittently due to float comparison.
         assert_eq!(
@@ -534,28 +265,5 @@ mod tests {
             },
             ephem[0]
         );
-    }
-
-    #[test]
-    fn test_parsing_date_time() {
-        let lines: [&str; 4] = [
-            "2459750.250000000 = A.D. 2022-Jun-19 18:00:00.0000 TDB ", // orbital_elements.txt
-            "2459750.375000000 = A.D. 2022-Jun-19 21:00:00.0000 TDB ",
-            "2459805.372175926 = A.D. 2022-Aug-13 20:55:56.0000 TDB ", // vector.txt
-            "2459805.455509259 = A.D. 2022-Aug-13 22:55:56.0000 TDB ",
-        ];
-
-        let expected: [DateTime<Utc>; 4] = [
-            Utc.with_ymd_and_hms(2022, 6, 19, 18, 0, 0).unwrap(),
-            Utc.with_ymd_and_hms(2022, 6, 19, 21, 0, 0).unwrap(),
-            Utc.with_ymd_and_hms(2022, 8, 13, 20, 55, 56).unwrap(),
-            Utc.with_ymd_and_hms(2022, 8, 13, 22, 55, 56).unwrap(),
-        ];
-
-        for (i, line) in lines.into_iter().enumerate() {
-            let time = parse_date_time(line);
-
-            assert_eq!(time, expected[i]);
-        }
     }
 }
