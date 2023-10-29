@@ -119,12 +119,12 @@ impl From<crate::EphemerisVectorItem> for EphemerisVectorItem {
         let position: Vec<Length> = item
             .position
             .into_iter()
-            .map(|p| Length::new::<length::kilometer>(p))
+            .map(Length::new::<length::kilometer>)
             .collect();
         let velocity: Vec<Velocity> = item
             .velocity
             .into_iter()
-            .map(|p| Velocity::new::<velocity::kilometer_per_second>(p))
+            .map(Velocity::new::<velocity::kilometer_per_second>)
             .collect();
 
         EphemerisVectorItem {

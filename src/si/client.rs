@@ -9,8 +9,10 @@ pub async fn ephemeris_vector(
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
 ) -> Vec<EphemerisVectorItem> {
-    crate::ephemeris_vector(id, start_time, stop_time).await.into_iter()
-        .map(|e| EphemerisVectorItem::from(e))
+    crate::ephemeris_vector(id, start_time, stop_time)
+        .await
+        .into_iter()
+        .map(EphemerisVectorItem::from)
         .collect()
 }
 /// Get orbital element ephemeris (e.g. eccentricity, semi-major axis, ...) of a
@@ -20,8 +22,9 @@ pub async fn ephemeris_orbital_elements(
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
 ) -> Vec<EphemerisOrbitalElementsItem> {
-
-    crate::ephemeris_orbital_elements(id, start_time, stop_time).await.into_iter()
-        .map(|e| EphemerisOrbitalElementsItem::from(e))
+    crate::ephemeris_orbital_elements(id, start_time, stop_time)
+        .await
+        .into_iter()
+        .map(EphemerisOrbitalElementsItem::from)
         .collect()
 }
