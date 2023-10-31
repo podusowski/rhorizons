@@ -4,7 +4,7 @@ mod si {
     /// Tests in this module connect to the real Horizons system. As such, they
     /// require Internet access and might start failing if Horizon's API changes.
     use chrono::{TimeZone, Utc};
-    use rhorizons::si::*;
+    use rhorizons::*;
 
     use uom::si::f32::Length;
     use uom::si::length;
@@ -22,7 +22,7 @@ mod si {
         //  X = 1.379561021896053E+08 Y = 5.667156012930278E+07 Z =-2.601196352168918E+03
         //  VX=-1.180102398133564E+01 VY= 2.743089439727051E+01 VZ= 3.309367894566151E-05
         //  LT= 4.974865749957088E+02 RG= 1.491427231399648E+08 RR=-4.926267109444211E-01
-        let vectors = ephemeris_vector(
+        let vectors: Vec<EphemerisVectorItem<f32, SiUnits>> = ephemeris_vector_si(
             399,
             Utc.with_ymd_and_hms(2016, 10, 15, 12, 0, 0).unwrap(),
             Utc.with_ymd_and_hms(2016, 10, 15, 13, 0, 0).unwrap(),
@@ -46,7 +46,7 @@ mod si {
         //  X =-8.125930353044792E+08 Y =-6.890018021386522E+07 Z = 1.846888215010012E+07
         //  VX= 9.479984730623543E-01 VY=-1.241342015681963E+01 VZ= 3.033885124560420E-02
         //  LT= 2.720942202383012E+03 RG= 8.157179509283365E+08 RR= 1.048282114626244E-01
-        let vectors = ephemeris_vector(
+        let vectors = ephemeris_vector_si(
             599,
             Utc.with_ymd_and_hms(2016, 10, 15, 12, 0, 0).unwrap(),
             Utc.with_ymd_and_hms(2016, 10, 15, 13, 0, 0).unwrap(),

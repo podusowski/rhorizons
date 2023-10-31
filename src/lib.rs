@@ -4,15 +4,17 @@
 mod client;
 mod ephemeris;
 mod major_bodies;
+mod units;
 mod utilities;
 
+pub use units::DefaultUnits;
 #[cfg(feature = "si")]
-/// Ephemeris information based on SI-units.
-/// Needs the `si` feature to be enabled
-///
-/// SI-units from the crate *uom*: <https://docs.rs/uom/0.35.0/uom/>
-pub mod si;
+pub use units::SiUnits;
 
 pub use client::{ephemeris_orbital_elements, ephemeris_vector, major_bodies};
+
+#[cfg(feature = "si")]
+pub use client::{ephemeris_orbital_elements_si, ephemeris_vector_si};
+
 pub use ephemeris::{EphemerisOrbitalElementsItem, EphemerisVectorItem};
 pub use major_bodies::MajorBody;

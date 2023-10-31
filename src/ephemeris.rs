@@ -1,6 +1,10 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::utilities::{take_expecting, take_or_empty};
+use num_traits::Float;
+
+#[cfg(feature = "si")]
+use uom::si::{angle, angular_velocity, length, time, velocity};
 
 /// Position (in km) and velocity (in km/s) of a body.
 ///
@@ -16,19 +20,19 @@ use crate::utilities::{take_expecting, take_or_empty};
 /// | RG              | Range; distance from coordinate center          | km                    |
 /// | RR              | Range-rate; radial velocity wrt coord. center   | km/sec                |
 #[derive(Debug, PartialEq)]
-pub struct EphemerisVectorItem {
+pub struct EphemerisVectorItem<F: Float, U: crate::units::Units<F>> {
     /// Timestamp of the entry in UTC
     pub time: DateTime<Utc>,
 
     /// Position int km of the moving body relative to the Sun
     ///
     /// [x, y, z]
-    pub position: [f32; 3],
+    pub position: [U::Length; 3],
 
     /// Velocity in km/s of the moving body relative to the Sun
     ///
     /// [v_x, v_y, v_z]
-    pub velocity: [f32; 3],
+    pub velocity: [U::Velocity; 3],
 }
 
 /// Orbital Elements of a body. Units are km, s and degrees
@@ -50,7 +54,7 @@ pub struct EphemerisVectorItem {
 ///
 /// For a detailed explenation of keplarian orbital elements, visit [Wikipedia](https://en.wikipedia.org/wiki/Orbital_elements)
 #[derive(Debug, PartialEq)]
-pub struct EphemerisOrbitalElementsItem {
+pub struct EphemerisOrbitalElementsItem<F: Float, U: crate::units::Units<F>> {
     /// Timestamp of the entry in UTC
     pub time: DateTime<Utc>,
 
@@ -63,56 +67,131 @@ pub struct EphemerisOrbitalElementsItem {
     /// Distance from the center to the nearest point of the orbit in kilometer (km)
     ///
     /// See <https://en.wikipedia.org/wiki/Apsis>
-    pub periapsis_distance: f32,
+    pub periapsis_distance: U::Length,
     /// Tilt of the orbit
     ///
     /// Expressed in degrees in reference to the X-Y plane  
     /// For futher information see <https://en.wikipedia.org/wiki/Inclination>
-    pub inclination: f32,
+    pub inclination: U::Angle,
 
     /// The point, were the orbit crosses the reference plane (X-Y plane) from south to north
     ///
     /// The unit of this value is in degrees.  
     /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
-    pub longitude_of_ascending_node: f32,
+    pub longitude_of_ascending_node: U::Angle,
     /// Angle in degrees of the periapsis to the ascending node, in the direction of motion.
     ///
     /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
-    pub argument_of_perifocus: f32,
+    pub argument_of_perifocus: U::Angle,
     /// The timestamp (Julian Day Number) at which the body reaches the periapsis of the orbit
     ///
     /// <https://en.wikipedia.org/wiki/Apsis#Time_of_perihelion>
-    pub time_of_periapsis: f32,
+    pub time_of_periapsis: U::Time,
 
     /// The angular speed (degrees/sec) of a body to complete one orbit
     ///
     /// Assumes constant speed in a circular orbit.  
     /// <https://en.wikipedia.org/wiki/Mean_motion>
-    pub mean_motion: f32,
+    pub mean_motion: U::AngularVelocity,
     /// Orbital distance from the periapsis to the moving body.
     ///
     /// The angle in degrees is in reference to a circular orbit.  
     /// <https://en.wikipedia.org/wiki/Mean_anomaly>
-    pub mean_anomaly: f32,
+    pub mean_anomaly: U::Angle,
     /// Angle in degrees between the moving body and the periapsis of the orbit.
     ///
     /// The angle is defined in relation to the main focus point.  
     /// <https://en.wikipedia.org/wiki/True_anomaly>
-    pub true_anomaly: f32,
+    pub true_anomaly: U::Angle,
 
     /// The sum of the periapsis and apoapsis distances divided by two in kilometer (km)
     ///
     /// <https://en.wikipedia.org/wiki/Semimajor_axis>
-    pub semi_major_axis: f32,
+    pub semi_major_axis: U::Length,
     /// Distance from the center to the farthest point of the orbit in kilometer (km)
     ///
     /// <https://en.wikipedia.org/wiki/Apsis>
-    pub apoapsis_distance: f32,
+    pub apoapsis_distance: U::Length,
     /// Time to complete on orbit in seconds
     ///
     /// Sidereal refers to the default period of an orbit.  
     /// <https://en.wikipedia.org/wiki/Orbital_period>
-    pub siderral_orbit_period: f32,
+    pub siderral_orbit_period: U::Time,
+}
+
+#[cfg(feature = "si")]
+impl<F> From<EphemerisVectorItem<F, crate::units::DefaultUnits>>
+    for EphemerisVectorItem<F, crate::units::SiUnits>
+where
+    F: Float + uom::Conversion<F, T = F> + std::fmt::Debug,
+    uom::si::length::meter: uom::Conversion<F, T = F>,
+    uom::si::length::kilometer: uom::Conversion<F, T = F>,
+    uom::si::mass::kilogram: uom::Conversion<F, T = F>,
+    uom::si::time::second: uom::Conversion<F, T = F>,
+    uom::si::electric_current::ampere: uom::Conversion<F, T = F>,
+    uom::si::thermodynamic_temperature::kelvin: uom::Conversion<F, T = F>,
+    uom::si::amount_of_substance::mole: uom::Conversion<F, T = F>,
+    uom::si::luminous_intensity::candela: uom::Conversion<F, T = F>,
+    uom::si::velocity::kilometer_per_second: uom::Conversion<F, T = F>,
+{
+    fn from(item: EphemerisVectorItem<F, crate::units::DefaultUnits>) -> Self {
+        let position: Vec<length::Length<uom::si::SI<F>, F>> = item
+            .position
+            .into_iter()
+            .map(length::Length::new::<length::kilometer>)
+            .collect();
+        let velocity: Vec<velocity::Velocity<uom::si::SI<F>, F>> = item
+            .velocity
+            .into_iter()
+            .map(velocity::Velocity::new::<velocity::kilometer_per_second>)
+            .collect();
+
+        EphemerisVectorItem {
+            time: item.time,
+            position: position.try_into().unwrap(),
+            velocity: velocity.try_into().unwrap(),
+        }
+    }
+}
+
+#[cfg(feature = "si")]
+impl<F> From<crate::EphemerisOrbitalElementsItem<F, crate::units::DefaultUnits>>
+    for EphemerisOrbitalElementsItem<F, crate::units::SiUnits>
+where
+    F: Float + uom::Conversion<F, T = F>,
+    uom::si::length::meter: uom::Conversion<F, T = F>,
+    uom::si::length::kilometer: uom::Conversion<F, T = F>,
+    uom::si::mass::kilogram: uom::Conversion<F, T = F>,
+    uom::si::time::second: uom::Conversion<F, T = F>,
+    uom::si::time::day: uom::Conversion<F, T = F>,
+    uom::si::electric_current::ampere: uom::Conversion<F, T = F>,
+    uom::si::thermodynamic_temperature::kelvin: uom::Conversion<F, T = F>,
+    uom::si::amount_of_substance::mole: uom::Conversion<F, T = F>,
+    uom::si::luminous_intensity::candela: uom::Conversion<F, T = F>,
+    uom::si::angle::degree: uom::Conversion<F, T = F>,
+    uom::si::angular_velocity::degree_per_second: uom::Conversion<F, T = F>,
+{
+    fn from(item: crate::EphemerisOrbitalElementsItem<F, crate::units::DefaultUnits>) -> Self {
+        EphemerisOrbitalElementsItem {
+            time: item.time,
+            eccentricity: item.eccentricity,
+            periapsis_distance: length::Length::new::<length::kilometer>(item.periapsis_distance),
+            inclination: angle::Angle::new::<angle::degree>(item.inclination),
+            longitude_of_ascending_node: angle::Angle::new::<angle::degree>(
+                item.longitude_of_ascending_node,
+            ),
+            argument_of_perifocus: angle::Angle::new::<angle::degree>(item.argument_of_perifocus),
+            time_of_periapsis: time::Time::new::<time::day>(item.time_of_periapsis),
+            mean_motion: angular_velocity::AngularVelocity::new::<
+                angular_velocity::degree_per_second,
+            >(item.mean_motion),
+            mean_anomaly: angle::Angle::new::<angle::degree>(item.mean_anomaly),
+            true_anomaly: angle::Angle::new::<angle::degree>(item.true_anomaly),
+            semi_major_axis: length::Length::new::<length::kilometer>(item.semi_major_axis),
+            apoapsis_distance: length::Length::new::<length::kilometer>(item.apoapsis_distance),
+            siderral_orbit_period: time::Time::new::<time::second>(item.siderral_orbit_period),
+        }
+    }
 }
 
 enum EphemerisVectorParserState {
@@ -200,7 +279,7 @@ impl<'a, Input: Iterator<Item = &'a str>> EphemerisOrbitalElementsParser<'a, Inp
 }
 
 impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a, Input> {
-    type Item = EphemerisVectorItem;
+    type Item = EphemerisVectorItem<f32, crate::units::DefaultUnits>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -288,7 +367,7 @@ impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisVectorParser<'a,
 }
 
 impl<'a, Input: Iterator<Item = &'a str>> Iterator for EphemerisOrbitalElementsParser<'a, Input> {
-    type Item = EphemerisOrbitalElementsItem;
+    type Item = EphemerisOrbitalElementsItem<f32, crate::units::DefaultUnits>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -476,7 +555,15 @@ fn parse_date_time(line: &str) -> DateTime<Utc> {
 mod tests {
     use chrono::TimeZone;
 
+    #[cfg(feature = "si")]
+    use crate::units::SiUnits;
+
     use super::*;
+
+    #[cfg(feature = "si")]
+    use uom::si::f32::*;
+    #[cfg(feature = "si")]
+    use uom::si::*;
 
     #[test]
     fn test_parsing_ephemeris_vector() {
@@ -554,5 +641,70 @@ mod tests {
 
             assert_eq!(time, expected[i]);
         }
+    }
+
+    #[cfg(feature = "si")]
+    #[test]
+    fn test_parsing_ephemeris_vector_si() {
+        let data = include_str!("vector.txt");
+        let ephem: Vec<EphemerisVectorItem<f32, SiUnits>> =
+            EphemerisVectorParser::parse(data.lines())
+                .map(EphemerisVectorItem::from)
+                .collect();
+        assert_eq!(4, ephem.len());
+        // TODO: This will probably fail intermittently due to float comparison.
+        assert_eq!(
+            EphemerisVectorItem {
+                time: Utc.with_ymd_and_hms(2022, 8, 13, 19, 55, 56).unwrap(), // A.D. 2022-Aug-13 19:55:56.0000 TDB
+                position: [
+                    Length::new::<length::kilometer>(1.870010427985840E+02),
+                    Length::new::<length::kilometer>(2.484687803242536E+03),
+                    Length::new::<length::kilometer>(-5.861602653492581E+03)
+                ],
+
+                velocity: [
+                    Velocity::new::<velocity::kilometer_per_second>(-3.362664133558439E-01),
+                    Velocity::new::<velocity::kilometer_per_second>(1.344100266143978E-02),
+                    Velocity::new::<velocity::kilometer_per_second>(-5.030275220358716E-03)
+                ]
+            },
+            ephem[0]
+        );
+    }
+
+    #[cfg(feature = "si")]
+    #[test]
+    fn test_parsing_ephemeris_orbital_elements_si() {
+        let data = include_str!("orbital_elements.txt");
+        let ephem: Vec<EphemerisOrbitalElementsItem<f32, SiUnits>> =
+            EphemerisOrbitalElementsParser::parse(data.lines())
+                .map(EphemerisOrbitalElementsItem::from)
+                .collect();
+        assert_eq!(4, ephem.len());
+        // TODO: This will probably fail intermittently due to float comparison.
+        assert_eq!(
+            EphemerisOrbitalElementsItem {
+                time: Utc.with_ymd_and_hms(2022, 6, 19, 18, 0, 0).unwrap(), // A.D. 2022-Jun-19 18:00:00.0000 TDB
+
+                eccentricity: 1.711794334680415E-02,
+                periapsis_distance: Length::new::<length::kilometer>(1.469885520304013E+08),
+                inclination: Angle::new::<angle::degree>(3.134746902320420E-03),
+
+                longitude_of_ascending_node: Angle::new::<angle::degree>(1.633896137466430E+02),
+                argument_of_perifocus: Angle::new::<angle::degree>(3.006492364709574E+02),
+                time_of_periapsis: Time::new::<time::day>(2459584.392523936927),
+
+                mean_motion: AngularVelocity::new::<angular_velocity::degree_per_second>(
+                    1.141316101270797E-05
+                ),
+                mean_anomaly: Angle::new::<angle::degree>(1.635515780663357E+02),
+                true_anomaly: Angle::new::<angle::degree>(1.640958153023696E+02),
+
+                semi_major_axis: Length::new::<length::kilometer>(1.495485150384278E+08),
+                apoapsis_distance: Length::new::<length::kilometer>(1.521084780464543E+08),
+                siderral_orbit_period: Time::new::<time::second>(3.154253230977451E+07),
+            },
+            ephem[0]
+        );
     }
 }
