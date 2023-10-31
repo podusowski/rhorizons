@@ -78,7 +78,7 @@ pub async fn ephemeris_vector(
     id: i32,
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
-) -> Vec<EphemerisVectorItem> {
+) -> Vec<EphemerisVectorItem<f32, crate::units::DefaultUnits>> {
     let result = query_with_retries(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
@@ -106,7 +106,7 @@ pub async fn ephemeris_orbital_elements(
     id: i32,
     start_time: DateTime<Utc>,
     stop_time: DateTime<Utc>,
-) -> Vec<EphemerisOrbitalElementsItem> {
+) -> Vec<EphemerisOrbitalElementsItem<f32, crate::units::DefaultUnits>> {
     let result = query_with_retries(&[
         ("COMMAND", id.to_string().as_str()),
         // Select Sun as a observer. Note that Solar System Barycenter is in a
@@ -127,4 +127,40 @@ pub async fn ephemeris_orbital_elements(
     .await;
 
     EphemerisOrbitalElementsParser::parse(result.iter().map(String::as_str)).collect()
+}
+
+#[cfg(feature = "si")]
+/// Get vector ephemeris (position and velocity) of a major body in SI-units. Coordinates are
+/// relative to the Sun's center.
+/// Needs the `si` feature to be enabled
+///
+/// SI-units from the crate *uom*: <https://docs.rs/uom/0.35.0/uom/>
+pub async fn ephemeris_vector_si(
+    id: i32,
+    start_time: DateTime<Utc>,
+    stop_time: DateTime<Utc>,
+) -> Vec<EphemerisVectorItem<f32, crate::units::SiUnits>> {
+    crate::ephemeris_vector(id, start_time, stop_time)
+        .await
+        .into_iter()
+        .map(EphemerisVectorItem::from)
+        .collect()
+}
+
+#[cfg(feature = "si")]
+/// Get orbital element ephemeris (e.g. eccentricity, semi-major axis, ...) of a
+/// major body relative to the Sun's center in SI-units.
+/// Needs the `si` feature to be enabled
+///
+/// SI-units from the crate *uom*: <https://docs.rs/uom/0.35.0/uom/>
+pub async fn ephemeris_orbital_elements_si(
+    id: i32,
+    start_time: DateTime<Utc>,
+    stop_time: DateTime<Utc>,
+) -> Vec<EphemerisOrbitalElementsItem<f32, crate::units::SiUnits>> {
+    crate::ephemeris_orbital_elements(id, start_time, stop_time)
+        .await
+        .into_iter()
+        .map(EphemerisOrbitalElementsItem::from)
+        .collect()
 }

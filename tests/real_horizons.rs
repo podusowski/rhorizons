@@ -25,7 +25,7 @@ async fn getting_earths_ephemeris() {
     //  X = 1.379561021896053E+08 Y = 5.667156012930278E+07 Z =-2.601196352168918E+03
     //  VX=-1.180102398133564E+01 VY= 2.743089439727051E+01 VZ= 3.309367894566151E-05
     //  LT= 4.974865749957088E+02 RG= 1.491427231399648E+08 RR=-4.926267109444211E-01
-    let vectors = ephemeris_vector(
+    let vectors: Vec<EphemerisVectorItem<f32, DefaultUnits>> = ephemeris_vector(
         399,
         Utc.with_ymd_and_hms(2016, 10, 15, 12, 0, 0).unwrap(),
         Utc.with_ymd_and_hms(2016, 10, 15, 13, 0, 0).unwrap(),

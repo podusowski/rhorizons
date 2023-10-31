@@ -1,5 +1,7 @@
 use chrono::{Duration, Utc};
-use rhorizons::{ephemeris_orbital_elements, major_bodies};
+use rhorizons::{
+    ephemeris_orbital_elements_si, major_bodies, EphemerisOrbitalElementsItem, SiUnits,
+};
 
 #[tokio::main]
 async fn main() {
@@ -22,10 +24,12 @@ async fn main() {
         start_time, stop_time
     );
 
-    for elements in ephemeris_orbital_elements(earth.id, start_time, stop_time).await {
+    let elements: Vec<EphemerisOrbitalElementsItem<f32, SiUnits>> =
+        ephemeris_orbital_elements_si(earth.id, start_time, stop_time).await;
+    for item in elements {
         println!(
             "Eccentricity: {:?}, Semi-major axis: {:?}, Inclination: {:?}, Longitude of ascending node: {:?}, Argument of perifocus: {:?}, Mean anomaly: {:?}",
-            elements.eccentricity, elements.semi_major_axis, elements.inclination, elements.longitude_of_ascending_node, elements.argument_of_perifocus, elements.mean_anomaly
+            item.eccentricity, item.semi_major_axis, item.inclination, item.longitude_of_ascending_node, item.argument_of_perifocus, item.mean_anomaly
         );
     }
 }
